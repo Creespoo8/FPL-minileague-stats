@@ -9,6 +9,7 @@ const fmt1 = (v) => (v===null || v===undefined) ? '—' : (Math.round(v*10)/10).
 const monthCz = {August:'srpen',September:'září',October:'říjen',November:'listopad',December:'prosinec',January:'leden',February:'únor',March:'březen',April:'duben',May:'květen'};
 
 const app = document.getElementById('app');
+document.title = `${DATA.league_name} — FPL Minileague`;
 
 // ---------- HERO ----------
 const leader = [...DATA.players].sort((a,b)=>b.total-a.total)[0];
@@ -16,7 +17,7 @@ const heroHTML = `
   <div class="hero">
     <div class="hero-left">
       <p class="eyebrow">${DATA.league_name}</p>
-      <h1>Sezónní přehled 2024/25</h1>
+      <h1>Sezónní přehled ${DATA.season || ''}</h1>
       <p>Statistiky ${DATA.players.length} manažerů napříč ${DATA.gw_labels.length} koly — body, forma, rekordy a měsíční vítězové na jednom místě.</p>
     </div>
     <div class="leader-card">
@@ -31,7 +32,7 @@ const heroHTML = `
   <section class="panel" id="panel-records"></section>
   <section class="panel" id="panel-motm"></section>
   <section class="panel" id="panel-wl"></section>
-  <footer>Data ze souboru FPL_2425.xlsx · ${DATA.gw_labels[0]}–${DATA.gw_labels[DATA.gw_labels.length-1]}</footer>
+  <footer>Data z FPL API${DATA.generated_at ? ' · aktualizováno ' + DATA.generated_at.replace('T',' ').replace('Z',' UTC') : ''} · ${DATA.gw_labels[0]}–${DATA.gw_labels[DATA.gw_labels.length-1]}</footer>
 `;
 app.innerHTML = heroHTML;
 
