@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FPL Minileague — 2024/25</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root{
+    --purple-950:#1c0021;
+    --purple-900:#2b0030;
+    --purple-800:#37003c;
+    --purple-700:#4a0a52;
+    --panel:#33073a;
+    --line: rgba(242,238,244,0.10);
+    --green:#00ff85;
+    --pink:#e90052;
+    --cyan:#04f5ff;
+    --gold:#ffd166;
+    --text:#f2eef4;
+    --text-dim:#c6b9cb;
+    --text-mute:#9a8aa0;
+    --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1100px 500px at 12% -10%, rgba(0,255,133,0.10), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(233,0,82,0.14), transparent 55%),
+      var(--purple-900);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  .wrap{max-width:1100px; margin:0 auto; padding:32px 20px 80px;}
+
+  h1,h2,h3,.num{font-family:'Space Grotesk',sans-serif;}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    display:flex; flex-wrap:wrap; gap:28px;
+    justify-content:space-between; align-items:flex-end;
+    border-bottom:1px solid var(--line);
+    padding-bottom:28px; margin-bottom:28px;
+  }
+  .hero-left .eyebrow{
+    color:var(--green); font-weight:600; font-size:13px; letter-spacing:0.02em;
+    margin:0 0 6px;
+  }
+  .hero-left h1{
+    font-size:clamp(28px,5vw,42px); line-height:1.05; margin:0 0 8px; font-weight:700;
+  }
+  .hero-left p{color:var(--text-dim); margin:0; max-width:520px; font-size:15px;}
+  .leader-card{
+    background:linear-gradient(160deg, var(--panel), var(--purple-800));
+    border:1px solid var(--line); border-radius:var(--radius);
+    padding:18px 24px; min-width:230px;
+  }
+  .leader-card .label{color:var(--text-mute); font-size:12px; margin-bottom:6px;}
+  .leader-card .name{font-size:19px; font-weight:700; margin-bottom:10px;}
+  .leader-card .points{font-size:38px; font-weight:700; color:var(--green); line-height:1;}
+  .leader-card .points span{font-size:14px; color:var(--text-mute); font-weight:500; margin-left:6px;}
+
+  /* ---------- NAV ---------- */
+  nav{
+    display:flex; gap:6px; flex-wrap:wrap;
+    margin-bottom:28px; border-bottom:1px solid var(--line); padding-bottom:2px;
+  }
+  nav button{
+    background:none; border:none; color:var(--text-mute);
+    font-family:'Inter',sans-serif; font-weight:600; font-size:14px;
+    padding:10px 14px; cursor:pointer; border-radius:8px 8px 0 0;
+    position:relative; top:1px;
+  }
+  nav button.active{
+    color:var(--text); border-bottom:2px solid var(--green);
+  }
+  nav button:hover{color:var(--text);}
+
+  section.panel{display:none;}
+  section.panel.active{display:block; animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+  .card{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:20px; margin-bottom:20px;
+  }
+  .card h2{font-size:17px; margin:0 0 4px; font-weight:700;}
+  .card .sub{color:var(--text-mute); font-size:13px; margin:0 0 16px;}
+
+  /* ---------- TABLE ---------- */
+  table{width:100%; border-collapse:collapse; font-size:14px;}
+  th{
+    text-align:left; color:var(--text-mute); font-weight:600; font-size:12px;
+    padding:8px 10px; border-bottom:1px solid var(--line); cursor:pointer; white-space:nowrap;
+  }
+  th:hover{color:var(--text);}
+  th.num, td.num{text-align:right;}
+  td{padding:10px 10px; border-bottom:1px solid var(--line); white-space:nowrap;}
+  tr:last-child td{border-bottom:none;}
+  tr.me td{color:var(--text);}
+  td.rank{color:var(--text-mute); font-variant-numeric:tabular-nums;}
+  td.player{font-weight:600;}
+  td.total{color:var(--green); font-weight:700; font-variant-numeric:tabular-nums;}
+  .table-scroll{overflow-x:auto;}
+  .form-bar{display:flex; gap:2px; align-items:flex-end; height:22px;}
+  .form-bar i{display:block; width:4px; background:var(--cyan); border-radius:1px; opacity:0.85;}
+
+  /* ---------- CHART ---------- */
+  .chart-wrap{position:relative; height:360px;}
+  .legend-pills{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;}
+  .pill{
+    font-size:12px; padding:5px 10px; border-radius:999px; border:1px solid var(--line);
+    color:var(--text-dim); cursor:pointer; user-select:none; font-weight:500;
+  }
+  .pill.on{color:var(--purple-900); font-weight:700;}
+
+  /* ---------- RECORDS ---------- */
+  .records-grid{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
+  @media(max-width:720px){.records-grid{grid-template-columns:1fr;}}
+  .rec-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:9px 0; border-bottom:1px solid var(--line); font-size:14px;
+  }
+  .rec-row:last-child{border-bottom:none;}
+  .rec-rank{color:var(--text-mute); width:22px; font-variant-numeric:tabular-nums; font-size:13px;}
+  .rec-name{flex:1; font-weight:600; padding:0 8px;}
+  .rec-meta{color:var(--text-mute); font-size:12px; margin-right:10px;}
+  .rec-pts{font-weight:700; font-variant-numeric:tabular-nums;}
+  .rec-pts.good{color:var(--green);}
+  .rec-pts.bad{color:var(--pink);}
+
+  /* ---------- MOTM ---------- */
+  .motm-list{display:flex; flex-direction:column; gap:10px;}
+  .motm-row{
+    display:grid; grid-template-columns:90px 1fr 1fr 1fr; gap:10px; align-items:center;
+    padding:10px 12px; background:rgba(0,0,0,0.14); border-radius:10px; font-size:13px;
+  }
+  @media(max-width:640px){.motm-row{grid-template-columns:70px 1fr; grid-template-rows:auto auto auto;}}
+  .motm-month{color:var(--text-mute); font-weight:600; font-size:12px;}
+  .medal{display:flex; align-items:center; gap:8px;}
+  .medal-dot{width:9px; height:9px; border-radius:50%; flex-shrink:0;}
+  .medal-name{font-weight:600;}
+  .medal-pts{color:var(--text-mute); font-size:12px;}
+
+  /* ---------- WIN/LOSE ---------- */
+  .wl-bars{display:flex; flex-direction:column; gap:10px;}
+  .wl-row{display:grid; grid-template-columns:120px 1fr 34px; gap:10px; align-items:center; font-size:13px;}
+  .wl-name{font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .wl-track{background:rgba(0,0,0,0.25); border-radius:6px; height:14px; overflow:hidden;}
+  .wl-fill{height:100%; border-radius:6px;}
+  .wl-count{text-align:right; font-variant-numeric:tabular-nums; color:var(--text-dim);}
+
+  footer{color:var(--text-mute); font-size:12px; text-align:center; margin-top:40px;}
+  footer a{color:var(--text-dim);}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script type="application/json" id="fpl-data">
+{"league_name": "FPL Minileague 2024/25", "gw_labels": ["GW 01", "GW 02", "GW 03", "GW 04", "GW 05", "GW 06", "GW 07", "GW 08", "GW 09", "GW 10", "GW 11", "GW 12", "GW 13", "GW 14", "GW 15", "GW 16", "GW 17", "GW 18", "GW 19", "GW 20", "GW 21", "GW 22", "GW 23", "GW 24", "GW 25", "GW 26", "GW 27", "GW 28", "GW 29", "GW 30", "GW 31", "GW 32", "GW 33", "GW 34", "GW 35", "GW 36", "GW 37", "GW 38"], "gw_months": ["August", "August", "August", "September", "September", "September", "October", "October", "October", "November", "November", "November", "November", "December", "December", "December", "December", "December", "December", "January", "January", "January", "January", "February", "February", "February", "February", "March", "March", "April", "April", "April", "April", "April", "May", "May", "May", "May"], "players": [{"rank": 1, "name": "Tomáš Kreps", "total": 2457, "transfer_cost": 0.0, "avg": 64.7, "form5": 307, "sd": 17.6, "max": 118, "min": 29, "half1": 1200, "half2": 1257, "gws": [63.0, 73.0, 82.0, 60.0, 73.0, 47.0, 50.0, 41.0, 74.0, 49.0, 63.0, 53.0, 81.0, 74.0, 46.0, 46.0, 83.0, 55.0, 87.0, 62.0, 80.0, 48.0, 50.0, 118.0, 89.0, 82.0, 65.0, 65.0, 29.0, 58.0, 46.0, 87.0, 71.0, 71.0, 42.0, 46.0, 74.0, 74.0], "chips": {"Triple Captain": "GW 32", "Bench boost": "GW 33", "Ass man": "GW 24", "Wildcard": "GW 16", "Wildcard 2": "GW 31", "Freehit": "W 34"}}, {"rank": 2, "name": "Milan Pádivý", "total": 2411, "transfer_cost": 4.0, "avg": 63.6, "form5": 261, "sd": 17.3, "max": 110, "min": 26, "half1": 1163, "half2": 1252, "gws": [94.0, 76.0, 52.0, 26.0, 49.0, 106.0, 46.0, 59.0, 73.0, 54.0, 79.0, 58.0, 65.0, 52.0, 67.0, 46.0, 50.0, 63.0, 48.0, 76.0, 72.0, 57.0, 61.0, 96.0, 80.0, 69.0, 59.0, 60.0, 61.0, 70.0, 53.0, 110.0, 67.0, 53.0, 50.0, 35.0, 60.0, 63.0], "chips": {"Triple Captain": "GW 23", "Bench boost": "GW 38", "Ass man": "GW 32", "Wildcard": "GW 5", "Wildcard 2": "GW 30", "Freehit": "GW 36"}}, {"rank": 3, "name": "Josef Mokráň", "total": 2344, "transfer_cost": 4.0, "avg": 61.8, "form5": 288, "sd": 15.7, "max": 95, "min": 31, "half1": 1079, "half2": 1269, "gws": [66.0, 84.0, 65.0, 67.0, 62.0, 37.0, 49.0, 37.0, 48.0, 31.0, 42.0, 53.0, 53.0, 60.0, 62.0, 52.0, 64.0, 54.0, 93.0, 69.0, 65.0, 43.0, 59.0, 95.0, 77.0, 85.0, 76.0, 66.0, 61.0, 67.0, 52.0, 87.0, 79.0, 78.0, 43.0, 58.0, 43.0, 66.0], "chips": {"Triple Captain": "GW 9", "Bench boost": "GW 36", "Ass man": "GW 30", "Wildcard": "GW 12", "Wildcard 2": "GW 34", "Freehit": "GW 29"}}, {"rank": 4, "name": "Milan Procházka", "total": 2255, "transfer_cost": 0.0, "avg": 59.3, "form5": 259, "sd": 16.6, "max": 104, "min": 28, "half1": 1057, "half2": 1198, "gws": [56.0, 42.0, 77.0, 60.0, 50.0, 60.0, 51.0, 28.0, 72.0, 33.0, 51.0, 37.0, 56.0, 58.0, 80.0, 54.0, 56.0, 58.0, 78.0, 84.0, 59.0, 43.0, 66.0, 101.0, 104.0, 72.0, 54.0, 65.0, 56.0, 52.0, 37.0, 64.0, 82.0, 54.0, 49.0, 48.0, 44.0, 64.0], "chips": {"Triple Captain": "GW 25", "Bench boost": "GW 38", "Ass man": "GW 33", "Wildcard": "GW 9", "Wildcard 2": "GW 37", "Freehit": "GW 29"}}, {"rank": 5, "name": "Martin Vácha", "total": 2250, "transfer_cost": 8.0, "avg": 59.4, "form5": 275, "sd": 18.7, "max": 122, "min": 25, "half1": 1089, "half2": 1169, "gws": [53.0, 90.0, 64.0, 37.0, 73.0, 81.0, 46.0, 50.0, 51.0, 56.0, 36.0, 52.0, 55.0, 59.0, 73.0, 25.0, 66.0, 53.0, 69.0, 57.0, 93.0, 40.0, 61.0, 122.0, 77.0, 65.0, 46.0, 68.0, 31.0, 46.0, 46.0, 76.0, 66.0, 75.0, 44.0, 66.0, 52.0, 38.0], "chips": {"Triple Captain": "GW 24", "Bench boost": "GW 33", "Ass man": "GW 35", "Wildcard": "GW 4", "Wildcard 2": "GW 30", "Freehit": "GW 34"}}, {"rank": 6, "name": "Denis Dvořák", "total": 2246, "transfer_cost": 0.0, "avg": 59.1, "form5": 243, "sd": 18.7, "max": 109, "min": 25, "half1": 1106, "half2": 1140, "gws": [37.0, 109.0, 65.0, 60.0, 63.0, 55.0, 41.0, 25.0, 61.0, 40.0, 47.0, 42.0, 83.0, 86.0, 46.0, 65.0, 50.0, 46.0, 85.0, 50.0, 59.0, 59.0, 68.0, 106.0, 69.0, 85.0, 61.0, 61.0, 54.0, 45.0, 34.0, 85.0, 61.0, 61.0, 40.0, 55.0, 46.0, 41.0], "chips": {"Triple Captain": "GW 14", "Bench boost": "GW 16", "Ass man": "GW 32", "Wildcard": "GW 12", "Wildcard 2": "GW 28", "Freehit": "GW 29"}}, {"rank": 7, "name": "Miroslav Pádivý", "total": 2214, "transfer_cost": 28.0, "avg": 59, "form5": 248, "sd": 18.8, "max": 120, "min": 32, "half1": 1062, "half2": 1180, "gws": [60.0, 77.0, 85.0, 33.0, 65.0, 58.0, 43.0, 38.0, 40.0, 41.0, 52.0, 49.0, 63.0, 77.0, 58.0, 47.0, 61.0, 62.0, 53.0, 46.0, 72.0, 32.0, 60.0, 106.0, 88.0, 72.0, 42.0, 76.0, 65.0, 62.0, 46.0, 120.0, 45.0, 54.0, 38.0, 49.0, 52.0, 55.0], "chips": {"Triple Captain": "GW 23", "Bench boost": "GW 24", "Ass man": "GW 30", "Wildcard": "GW 16", "Wildcard 2": "GW 34", "Freehit": "GW 29"}}, {"rank": 8, "name": "Martin Šípek", "total": 2211, "transfer_cost": 12.0, "avg": 58.5, "form5": 287, "sd": 23.7, "max": 140, "min": 14, "half1": 997, "half2": 1226, "gws": [75.0, 102.0, 73.0, 53.0, 49.0, 53.0, 47.0, 14.0, 62.0, 29.0, 45.0, 25.0, 91.0, 30.0, 57.0, 59.0, 25.0, 46.0, 62.0, 57.0, 51.0, 53.0, 45.0, 140.0, 102.0, 53.0, 76.0, 60.0, 90.0, 56.0, 32.0, 68.0, 56.0, 69.0, 44.0, 56.0, 59.0, 59.0], "chips": {"Triple Captain": "GW 24", "Bench boost": "GW 33", "Ass man": "GW 35", "Wildcard": "GW 13", "Wildcard 2": "GW 30", "Freehit": "GW 29"}}, {"rank": 9, "name": "Tomáš Čedík", "total": 2130, "transfer_cost": 0.0, "avg": 56.1, "form5": 264, "sd": 22.4, "max": 129, "min": 25, "half1": 916, "half2": 1214, "gws": [54.0, 53.0, 29.0, 67.0, 77.0, 58.0, 76.0, 38.0, 36.0, 25.0, 27.0, 59.0, 81.0, 34.0, 30.0, 42.0, 27.0, 42.0, 61.0, 41.0, 70.0, 26.0, 81.0, 129.0, 77.0, 86.0, 62.0, 94.0, 51.0, 62.0, 31.0, 67.0, 73.0, 70.0, 41.0, 58.0, 48.0, 47.0], "chips": {"Triple Captain": "GW 24", "Ass man": "GW 28", "Wildcard 2": "GW 23"}}, {"rank": 10, "name": "Miroslav Paňák", "total": 1976, "transfer_cost": 0.0, "avg": 52, "form5": 230, "sd": 17.9, "max": 102, "min": 25, "half1": 1064, "half2": 912, "gws": [49.0, 100.0, 41.0, 39.0, 63.0, 102.0, 75.0, 34.0, 54.0, 26.0, 39.0, 75.0, 79.0, 57.0, 65.0, 53.0, 27.0, 48.0, 38.0, 61.0, 57.0, 38.0, 67.0, 39.0, 46.0, 53.0, 68.0, 47.0, 30.0, 40.0, 25.0, 47.0, 64.0, 51.0, 34.0, 44.0, 49.0, 52.0], "chips": {"Triple Captain": "GW 30", "Wildcard 2": "GW 29"}}], "best": [{"rank": 1, "points": 109.0, "name": "Denis Dvořák", "gw": "GW 02", "transfers": 31}, {"rank": 2, "points": 106.0, "name": "Milan Pádivý", "gw": "GW 06", "transfers": 23}, {"rank": 3, "points": 102.0, "name": "Martin Šípek", "gw": "GW 02", "transfers": 20}, {"rank": 3, "points": 102.0, "name": "Miroslav Paňák", "gw": "GW 06", "transfers": 20}, {"rank": 5, "points": 100.0, "name": "Miroslav Paňák", "gw": "GW 02", "transfers": 18}, {"rank": 6, "points": 94.0, "name": "Milan Pádivý", "gw": "GW 01", "transfers": 16}, {"rank": 7, "points": 91.0, "name": "Martin Šípek", "gw": "GW 13", "transfers": 18}, {"rank": 8, "points": 90.0, "name": "Martin Vácha", "gw": "GW 02", "transfers": 16}, {"rank": 9, "points": 86.0, "name": "Denis Dvořák", "gw": "GW 14", "transfers": 20}, {"rank": 10, "points": 85.0, "name": "Miroslav Pádivý", "gw": "GW 03", "transfers": 21}, {"rank": 11, "points": 84.0, "name": "Josef Mokráň", "gw": "GW 02", "transfers": 20}, {"rank": 12, "points": 83.0, "name": "Denis Dvořák", "gw": "GW 13", "transfers": 19}, {"rank": 13, "points": 82.0, "name": "Tomáš Kreps", "gw": "GW 03", "transfers": 20}, {"rank": 14, "points": 81.0, "name": "Martin Vácha", "gw": "GW 06", "transfers": 21}, {"rank": 14, "points": 81.0, "name": "Tomáš Kreps", "gw": "GW 13", "transfers": 21}, {"rank": 14, "points": 81.0, "name": "Tomáš Čedík", "gw": "GW 13", "transfers": 21}], "worst": [{"rank": 1, "points": 14.0, "name": "Martin Šípek", "gw": "GW 08", "transfers": 0}, {"rank": 2, "points": 25.0, "name": "Denis Dvořák", "gw": "GW 08", "transfers": 0}, {"rank": 2, "points": 25.0, "name": "Tomáš Čedík", "gw": "GW 10", "transfers": 0}, {"rank": 2, "points": 25.0, "name": "Martin Šípek", "gw": "GW 12", "transfers": 0}, {"rank": 5, "points": 26.0, "name": "Milan Pádivý", "gw": "GW 04", "transfers": -1}, {"rank": 5, "points": 26.0, "name": "Miroslav Paňák", "gw": "GW 10", "transfers": -1}, {"rank": 7, "points": 27.0, "name": "Tomáš Čedík", "gw": "GW 11", "transfers": -2}, {"rank": 8, "points": 28.0, "name": "Milan Procházka", "gw": "GW 08", "transfers": -2}, {"rank": 9, "points": 29.0, "name": "Tomáš Čedík", "gw": "GW 03", "transfers": -3}, {"rank": 9, "points": 29.0, "name": "Martin Šípek", "gw": "GW 10", "transfers": -3}, {"rank": 11, "points": 30.0, "name": "Martin Šípek", "gw": "GW 14", "transfers": -3}, {"rank": 11, "points": 30.0, "name": "Tomáš Čedík", "gw": "GW 15", "transfers": -3}, {"rank": 13, "points": 31.0, "name": "Josef Mokráň", "gw": "GW 10", "transfers": -4}, {"rank": 14, "points": 33.0, "name": "Miroslav Pádivý", "gw": "GW 04", "transfers": -5}, {"rank": 14, "points": 33.0, "name": "Milan Procházka", "gw": "GW 10", "transfers": -5}, {"rank": 16, "points": 34.0, "name": "Miroslav Paňák", "gw": "GW 08", "transfers": -5}, {"rank": 16, "points": 34.0, "name": "Tomáš Čedík", "gw": "GW 14", "transfers": -5}], "motm": [{"month": "August", "gold": {"name": "Martin Šípek", "points": 250}, "silver": {"name": "Milan Pádivý", "points": 222}, "bronze": {"name": "Miroslav Pádivý", "points": 222}}, {"month": "September", "gold": {"name": "Miroslav Paňák", "points": 204}, "silver": {"name": "Tomáš Čedík", "points": 202}, "bronze": {"name": "Martin Vácha", "points": 191}}, {"month": "October", "gold": {"name": "Milan Pádivý", "points": 178}, "silver": {"name": "Tomáš Kreps", "points": 165}, "bronze": {"name": "Miroslav Paňák", "points": 163}}, {"month": "November", "gold": {"name": "Milan Pádivý", "points": 256}, "silver": {"name": "Tomáš Kreps", "points": 246}, "bronze": {"name": "Miroslav Pádivý", "points": 205}}, {"month": "December", "gold": {"name": "Tomáš Kreps", "points": 391}, "silver": {"name": "Milan Pádivý", "points": 326}, "bronze": {"name": "Martin Vácha", "points": 345}}, {"month": "January", "gold": {"name": "Milan Pádivý", "points": 266}, "silver": {"name": "Milan Procházka", "points": 252}, "bronze": {"name": "Martin Vácha", "points": 251}}, {"month": "February", "gold": {"name": "Martin Šípek", "points": 371}, "silver": {"name": "Tomáš Čedík", "points": 354}, "bronze": {"name": "Tomáš Kreps", "points": 354}}, {"month": "March", "gold": {"name": "Martin Šípek", "points": 150}, "silver": {"name": "Tomáš Čedík", "points": 145}, "bronze": {"name": "Miroslav Pádivý", "points": 141}}, {"month": "April", "gold": {"name": "Josef Mokráň", "points": 363}, "silver": {"name": "Milan Pádivý", "points": 353}, "bronze": {"name": "Tomáš Kreps", "points": 333}}], "winners": [{"rank": 1, "name": "Milan Pádivý", "count": 8}, {"rank": 2, "name": "Tomáš Čedík", "count": 6}, {"rank": 3, "name": "Denis Dvořák", "count": 4}, {"rank": 3, "name": "Martin Šípek", "count": 4}, {"rank": 3, "name": "Josef Mokráň", "count": 4}, {"rank": 3, "name": "Milan Procházka", "count": 4}, {"rank": 3, "name": "Tomáš Kreps", "count": 4}, {"rank": 8, "name": "Martin Vácha", "count": 3}, {"rank": 9, "name": "Miroslav Pádivý", "count": 2}, {"rank": 10, "name": "Miroslav Paňák", "count": 1}], "losers": [{"rank": 1, "name": "Miroslav Paňák", "count": 10}, {"rank": 2, "name": "Tomáš Čedík", "count": 8}, {"rank": 2, "name": "Martin Šípek", "count": 8}, {"rank": 4, "name": "Josef Mokráň", "count": 3}, {"rank": 4, "name": "Milan Pádivý", "count": 3}, {"rank": 6, "name": "Denis Dvořák", "count": 2}, {"rank": 6, "name": "Miroslav Pádivý", "count": 2}, {"rank": 6, "name": "Martin Vácha", "count": 2}, {"rank": 9, "name": "Milan Procházka", "count": 1}, {"rank": 9, "name": "Tomáš Kreps", "count": 1}]}
+</script>
+
+<script>
+const DATA = JSON.parse(document.getElementById('fpl-data').textContent);
+</script>
+<script src="dashboard.js"></script>
+</body>
+</html>
