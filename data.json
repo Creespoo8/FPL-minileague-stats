@@ -1,7 +1,7 @@
 {
   "league_name": "FPL okresu Benešov",
   "season": "2026/27",
-  "generated_at": "2026-08-31T22:31:24Z",
+  "generated_at": "2026-09-01T22:33:25Z",
   "gw_labels": [
     "GW 01",
     "GW 02",
@@ -615,18 +615,18 @@
     },
     {
       "name": "Milan Procházka",
-      "total": 102.0,
+      "total": 103.0,
       "transfer_cost": 0,
-      "avg": 51.0,
-      "form5": 102.0,
-      "sd": 8.0,
-      "max": 59.0,
+      "avg": 51.5,
+      "form5": 103.0,
+      "sd": 8.5,
+      "max": 60.0,
       "min": 43.0,
-      "half1": 102.0,
+      "half1": 103.0,
       "half2": 0,
       "gws": [
         43.0,
-        59.0,
+        60.0,
         null,
         null,
         null,
@@ -811,7 +811,7 @@
       "rank": 5
     },
     {
-      "points": 59.0,
+      "points": 60.0,
       "name": "Milan Procházka",
       "gw": "GW 02",
       "transfers": 0,
