@@ -148,6 +148,11 @@ def build_dataset() -> dict:
                 "avg": round(total / len(played), 1) if played else None,
                 "form5": sum(played[-5:]) if played else 0,
                 "sd": round(statistics.pstdev(played), 1) if len(played) > 1 else 0,
+# Konzistence = 100 * (1 - SD / průměr) — vyšší % = stabilnější výkony.
+"consistency": (
+    round(100 * (1 - statistics.pstdev(played) / (total / len(played))), 1)
+    if len(played) > 1 and total > 0
+    else None
                 "max": max(played) if played else None,
                 "min": min(played) if played else None,
                 "half1": sum(v for v in gws[:half] if v is not None),
