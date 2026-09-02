@@ -1,9 +1,20 @@
 // ---------- helpers ----------
-const PALETTE = ['#00ff85','#e90052','#04f5ff','#ffd166','#c084fc','#ff8c42','#63e6be','#f472b6','#a3e635','#94a3b8'];
-const colorFor = (name) => {
+// Barvy generujeme rovnoměrně po barevném kole podle POČTU manažerů, ne z pevné
+// palety — díky tomu nikdy nedojde k tomu, že by dva manažeři měli stejnou barvu
+// (dřív se to stávalo, když jich bylo víc než barev v paletě).
+const PLAYER_COLORS = (() => {
   const names = DATA.players.map(p=>p.name);
-  const idx = names.indexOf(name);
-  return PALETTE[idx % PALETTE.length];
+  const n = names.length;
+  const map = {};
+  names.forEach((name, i) => {
+    map[name] = { h: Math.round((360 / n) * i), s: 82, l: 58 };
+  });
+  return map;
+})();
+const colorFor = (name, alpha = 1) => {
+  const c = PLAYER_COLORS[name];
+  if (!c) return `rgba(148,163,184,${alpha})`;
+  return `hsla(${c.h}, ${c.s}%, ${c.l}%, ${alpha})`;
 };
 const fmt1 = (v) => (v===null || v===undefined) ? '—' : (Math.round(v*10)/10).toString().replace('.', ',');
 const monthCz = {August:'srpen',September:'září',October:'říjen',November:'listopad',December:'prosinec',January:'leden',February:'únor',March:'březen',April:'duben',May:'květen'};
@@ -126,12 +137,12 @@ function drawChart(){
   panel.innerHTML = `
     <div class="card">
       <h2>Vývoj pořadí v kolech</h2>
-      <p class="sub">Klikni na jméno a schovej/zobraz křivku manažera. 1. místo = vede ligu po daném kole.</p>
-      <div class="legend-pills" id="legend"></div>
-      <div class="chart-wrap"><canvas id="gwChart"></canvas></div>
+      <p class="sub">Najeď myší na jméno vpravo pro zvýraznění, klikni pro schování/zobrazení. 1. místo = vede ligu po daném kole.</p>
+      <div class="chart-wrap">
+        <canvas id="gwChart"></canvas>
+        <div id="rankLabels" style="position:absolute; top:0; left:0; height:100%; width:100%; pointer-events:none;"></div>
+      </div>
     </div>`;
-  const legend = document.getElementById('legend');
-  legend.innerHTML = DATA.players.map(p=>`<span class="pill on" style="border-color:${colorFor(p.name)}; background:${colorFor(p.name)}22;" data-name="${p.name}">${p.name}</span>`).join('');
 
   // Kolik kol už bylo odehráno (aspoň jeden manažer má non-null skóre) —
   // dál za tímto bodem necháváme v datech null, aby graf měl mezeru, ne umělou rovnou čáru.
@@ -163,29 +174,76 @@ function drawChart(){
     snapshot.forEach((s, rankIdx)=>{ positions[s.name][i] = rankIdx+1; });
   }
 
+  // Jména napravo od grafu — poziciovaná dynamicky na výšku posledního odehraného
+  // bodu dané křivky, takže vždy odpovídají aktuálnímu pořadí manažera.
+  const rankLabelsEl = document.getElementById('rankLabels');
+  const labelEls = DATA.players.map(p=>{
+    const el = document.createElement('div');
+    el.textContent = p.name;
+    el.style.position = 'absolute';
+    el.style.fontSize = '13px';
+    el.style.fontWeight = '600';
+    el.style.color = colorFor(p.name, 1);
+    el.style.whiteSpace = 'nowrap';
+    el.style.pointerEvents = 'auto';
+    el.style.cursor = 'pointer';
+    el.style.transform = 'translateY(-50%)';
+    rankLabelsEl.appendChild(el);
+    return el;
+  });
+
+  let chart = null;
+  function positionLabels(){
+    if(!chart) return;
+    const area = chart.chartArea;
+    DATA.players.forEach((p,i)=>{
+      const meta = chart.getDatasetMeta(i);
+      let lastIdx = -1;
+      for(let j=chart.data.datasets[i].data.length-1;j>=0;j--){
+        if(chart.data.datasets[i].data[j] !== null){ lastIdx = j; break; }
+      }
+      const el = labelEls[i];
+      if(lastIdx === -1 || meta.hidden){
+        el.style.opacity = meta.hidden ? '0.3' : '0';
+        return;
+      }
+      el.style.opacity = '1';
+      const point = meta.data[lastIdx];
+      el.style.top = point.y + 'px';
+      el.style.left = (area.right + 10) + 'px';
+    });
+  }
+  const positionPlugin = { id:'positionPlugin', afterRender(){ positionLabels(); } };
+
   const ctx = document.getElementById('gwChart').getContext('2d');
   const datasets = DATA.players.map(p=>({
     label: p.name,
     data: positions[p.name],
     borderColor: colorFor(p.name),
     backgroundColor: colorFor(p.name),
-    borderWidth: 2,
-    pointRadius: 0,
-    pointHoverRadius: 4,
+    borderWidth: 2.5,
+    pointRadius: 2,
+    pointHoverRadius: 5,
     tension: 0.25,
     spanGaps: false,
   }));
-  const chart = new Chart(ctx, {
+  chart = new Chart(ctx, {
     type:'line',
     data:{ labels: DATA.gw_labels.map(l=>l.replace('GW ','')), datasets },
+    plugins:[positionPlugin],
     options:{
       responsive:true, maintainAspectRatio:false,
-      interaction:{mode:'nearest', intersect:false},
+      layout:{ padding:{ right: 170 } },
+      interaction:{mode:'index', intersect:false},
       plugins:{ legend:{display:false},
-        tooltip:{ callbacks:{
-          title:(items)=> 'GW '+items[0].label,
-          label:(item)=> item.parsed.y===null ? `${item.dataset.label}: —` : `${item.dataset.label}: ${item.parsed.y}. místo`
-        } } },
+        tooltip:{
+          itemSort:(a,b)=> a.parsed.y - b.parsed.y,
+          filter:(item)=> item.parsed.y !== null,
+          callbacks:{
+            title:(items)=> 'GW '+items[0].label,
+            label:(item)=> `${item.parsed.y}. ${item.dataset.label}`
+          }
+        } },
       scales:{
         x:{ grid:{color:'rgba(242,238,244,0.06)'}, ticks:{color:'#c6b9cb', maxTicksLimit:12} },
         y:{
@@ -199,16 +257,29 @@ function drawChart(){
     }
   });
 
-  legend.addEventListener('click', (e)=>{
-    const pill = e.target.closest('.pill');
-    if(!pill) return;
-    const name = pill.dataset.name;
-    const ds = chart.data.datasets.find(d=>d.label===name);
-    const idx = chart.data.datasets.indexOf(ds);
-    const meta = chart.getDatasetMeta(idx);
-    meta.hidden = !meta.hidden;
-    pill.classList.toggle('on', !meta.hidden);
-    chart.update();
+  labelEls.forEach((el,i)=>{
+    el.addEventListener('mouseenter', ()=>{
+      chart.data.datasets.forEach((ds,j)=>{
+        const isTarget = j===i;
+        ds.borderColor = colorFor(ds.label, isTarget ? 1 : 0.1);
+        ds.borderWidth = isTarget ? 4 : 2.5;
+        labelEls[j].style.opacity = isTarget ? '1' : '0.25';
+      });
+      chart.update('none');
+    });
+    el.addEventListener('mouseleave', ()=>{
+      chart.data.datasets.forEach((ds,j)=>{
+        ds.borderColor = colorFor(ds.label, 1);
+        ds.borderWidth = 2.5;
+        labelEls[j].style.opacity = '1';
+      });
+      chart.update('none');
+    });
+    el.addEventListener('click', ()=>{
+      const meta = chart.getDatasetMeta(i);
+      meta.hidden = !meta.hidden;
+      chart.update();
+    });
   });
 }
 
