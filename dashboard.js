@@ -65,12 +65,13 @@ function renderTable(){
     {k:'rank', label:'#'},
     {k:'name', label:'Manažer'},
     {k:'total', label:'Body'},
+    {k:'transfer_cost', label:'Body za přestupy'},
     {k:'avg', label:'Průměr/kolo'},
     {k:'form5', label:'Forma (5)'},
     {k:'max', label:'Max'},
     {k:'min', label:'Min'},
-    {k:'sd', label:'Kolísavost'},
-    {k:'transfer_cost', label:'Body za přestupy'},
+    {k:'consistency', label:'Konzistence'},
+    
   ];
   const thead = cols.map(c=>`<th class="${c.k==='name'?'':'num'}" data-key="${c.k}">${c.label}${sortKey===c.k?(sortDir===1?' ▲':' ▼'):''}</th>`).join('');
   const tbody = rows.map(p=>{
@@ -81,12 +82,12 @@ function renderTable(){
       <td class="rank">${p.rank}</td>
       <td class="player">${p.name}</td>
       <td class="num total">${p.total}</td>
+      <td class="num">${p.transfer_cost}</td>
       <td class="num">${fmt1(p.avg)}</td>
       <td class="num">${p.form5}</td>
       <td class="num">${p.max}</td>
       <td class="num">${p.min}</td>
-      <td class="num">${fmt1(p.sd)}</td>
-      <td class="num">${p.transfer_cost}</td>
+      <td class="num">${p.consistency===null||p.consistency===undefined?'—':fmt1(p.consistency)+'\u00a0%'}</td>
     </tr>`;
   }).join('');
   document.getElementById('panel-table').innerHTML = `
