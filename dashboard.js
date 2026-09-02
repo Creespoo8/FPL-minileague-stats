@@ -235,6 +235,7 @@ function drawChart(){
     pointHoverRadius: 5,
     tension: 0.25,
     spanGaps: false,
+    clip: false,
   }));
   chart = new Chart(ctx, {
     type:'line',
