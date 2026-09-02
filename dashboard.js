@@ -185,6 +185,7 @@ function drawChart(){
     el.style.left = '0';
     el.style.opacity = '0'; // skryté, dokud positionLabels() nedopočítá skutečné místo
     el.style.fontSize = '13px';
+    el.style.lineHeight = '1';
     el.style.fontWeight = '600';
     el.style.color = colorFor(p.name, 1);
     el.style.whiteSpace = 'nowrap';
@@ -199,6 +200,7 @@ function drawChart(){
   function positionLabels(){
     if(!chart) return;
     const area = chart.chartArea;
+    const containerHeight = rankLabelsEl.clientHeight;
     DATA.players.forEach((p,i)=>{
       const meta = chart.getDatasetMeta(i);
       let lastIdx = -1;
@@ -212,7 +214,11 @@ function drawChart(){
       }
       el.style.opacity = '1';
       const point = meta.data[lastIdx];
-      el.style.top = point.y + 'px';
+      // Srazíme popisek zpátky dovnitř plochy, kdyby jeho skutečná (změřená) výška
+      // sahala za horní/dolní okraj — řeší to natvrdo, bez ohledu na velikost fontu.
+      const halfH = (el.offsetHeight || 16) / 2;
+      const top = Math.min(Math.max(point.y, halfH), containerHeight - halfH);
+      el.style.top = top + 'px';
       el.style.left = (area.right + 10) + 'px';
     });
   }
