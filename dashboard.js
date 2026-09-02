@@ -58,7 +58,7 @@ nav.addEventListener('click', (e)=>{
 document.getElementById('panel-table').classList.add('active');
 
 // ---------- TABLE ----------
-let sortKey = 'total', sortDir = -1;
+let sortKey = 'total', sortDir = 1;
 function renderTable(){
   const rows = [...DATA.players].sort((a,b)=> (a[sortKey]<b[sortKey]?1:-1) * sortDir);
   const cols = [
