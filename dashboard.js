@@ -7,10 +7,10 @@ const colorFor = (name) => {
 };
 const fmt1 = (v) => (v===null || v===undefined) ? '—' : (Math.round(v*10)/10).toString().replace('.', ',');
 const monthCz = {August:'srpen',September:'září',October:'říjen',November:'listopad',December:'prosinec',January:'leden',February:'únor',March:'březen',April:'duben',May:'květen'};
- 
+
 const app = document.getElementById('app');
 document.title = `${DATA.league_name} — FPL Minileague`;
- 
+
 // ---------- HERO ----------
 const leader = [...DATA.players].sort((a,b)=>b.total-a.total)[0];
 const heroHTML = `
@@ -35,7 +35,7 @@ const heroHTML = `
   <footer>Data z FPL API${DATA.generated_at ? ' · aktualizováno ' + DATA.generated_at.replace('T',' ').replace('Z',' UTC') : ''} · ${DATA.gw_labels[0]}–${DATA.gw_labels[DATA.gw_labels.length-1]}</footer>
 `;
 app.innerHTML = heroHTML;
- 
+
 // ---------- NAV ----------
 const tabs = [
   {id:'table', label:'Tabulka'},
@@ -56,7 +56,7 @@ nav.addEventListener('click', (e)=>{
   if(btn.dataset.tab==='chart' && !chartDrawn) drawChart();
 });
 document.getElementById('panel-table').classList.add('active');
- 
+
 // ---------- TABLE ----------
 let sortKey = 'total', sortDir = 1;
 function renderTable(){
@@ -117,39 +117,63 @@ function renderTable(){
   });
 }
 renderTable();
- 
+
 // ---------- CHART ----------
 let chartDrawn = false;
-let activeNames = new Set(DATA.players.map(p=>p.name));
 function drawChart(){
   chartDrawn = true;
   const panel = document.getElementById('panel-chart');
   panel.innerHTML = `
     <div class="card">
-      <h2>Vývoj kumulativních bodů</h2>
-      <p class="sub">Klikni na jméno a schovej/zobraz křivku manažera.</p>
+      <h2>Vývoj pořadí v kolech</h2>
+      <p class="sub">Klikni na jméno a schovej/zobraz křivku manažera. 1. místo = vede ligu po daném kole.</p>
       <div class="legend-pills" id="legend"></div>
       <div class="chart-wrap"><canvas id="gwChart"></canvas></div>
     </div>`;
   const legend = document.getElementById('legend');
   legend.innerHTML = DATA.players.map(p=>`<span class="pill on" style="border-color:${colorFor(p.name)}; background:${colorFor(p.name)}22;" data-name="${p.name}">${p.name}</span>`).join('');
- 
+
+  // Kolik kol už bylo odehráno (aspoň jeden manažer má non-null skóre) —
+  // dál za tímto bodem necháváme v datech null, aby graf měl mezeru, ne umělou rovnou čáru.
+  let lastPlayedIdx = -1;
+  DATA.players.forEach(p=>{
+    p.gws.forEach((v, idx)=>{ if(v !== null && idx > lastPlayedIdx) lastPlayedIdx = idx; });
+  });
+  const numGW = lastPlayedIdx + 1;
+  const totalGW = DATA.gw_labels.length; // vždy 38, i když se ještě neodehrálo
+
+  // Kumulativní body po jednotlivých odehraných kolech.
   const cumulative = {};
   DATA.players.forEach(p=>{
     let sum = 0;
-    cumulative[p.name] = p.gws.map(v=>{ sum += (v||0); return sum; });
+    cumulative[p.name] = [];
+    for(let i=0;i<numGW;i++){
+      sum += (p.gws[i] || 0);
+      cumulative[p.name].push(sum);
+    }
   });
- 
+
+  // Z kumulativních bodů spočítáme pořadí (1 = nejvíc bodů) po každém odehraném kole,
+  // zbytek sezóny (dosud neodehraná kola) necháme jako null.
+  const positions = {};
+  DATA.players.forEach(p=>{ positions[p.name] = new Array(totalGW).fill(null); });
+  for(let i=0;i<numGW;i++){
+    const snapshot = DATA.players.map(p=>({name:p.name, pts:cumulative[p.name][i]}));
+    snapshot.sort((a,b)=> b.pts - a.pts);
+    snapshot.forEach((s, rankIdx)=>{ positions[s.name][i] = rankIdx+1; });
+  }
+
   const ctx = document.getElementById('gwChart').getContext('2d');
   const datasets = DATA.players.map(p=>({
     label: p.name,
-    data: cumulative[p.name],
+    data: positions[p.name],
     borderColor: colorFor(p.name),
     backgroundColor: colorFor(p.name),
     borderWidth: 2,
     pointRadius: 0,
     pointHoverRadius: 4,
     tension: 0.25,
+    spanGaps: false,
   }));
   const chart = new Chart(ctx, {
     type:'line',
@@ -158,14 +182,23 @@ function drawChart(){
       responsive:true, maintainAspectRatio:false,
       interaction:{mode:'nearest', intersect:false},
       plugins:{ legend:{display:false},
-        tooltip:{ callbacks:{ title:(items)=> 'GW '+items[0].label } } },
+        tooltip:{ callbacks:{
+          title:(items)=> 'GW '+items[0].label,
+          label:(item)=> item.parsed.y===null ? `${item.dataset.label}: —` : `${item.dataset.label}: ${item.parsed.y}. místo`
+        } } },
       scales:{
         x:{ grid:{color:'rgba(242,238,244,0.06)'}, ticks:{color:'#c6b9cb', maxTicksLimit:12} },
-        y:{ grid:{color:'rgba(242,238,244,0.06)'}, ticks:{color:'#c6b9cb'} }
+        y:{
+          reverse:true,
+          min:1,
+          max:DATA.players.length,
+          ticks:{color:'#c6b9cb', stepSize:1, precision:0},
+          grid:{color:'rgba(242,238,244,0.06)'}
+        }
       }
     }
   });
- 
+
   legend.addEventListener('click', (e)=>{
     const pill = e.target.closest('.pill');
     if(!pill) return;
@@ -178,7 +211,7 @@ function drawChart(){
     chart.update();
   });
 }
- 
+
 // ---------- RECORDS ----------
 function renderRecords(){
   const bestRows = DATA.best.map(r=>`
@@ -206,7 +239,7 @@ function renderRecords(){
     </div>`;
 }
 renderRecords();
- 
+
 // ---------- MOTM ----------
 function renderMotm(){
   const rows = DATA.motm.map(m=>`
@@ -224,7 +257,7 @@ function renderMotm(){
     </div>`;
 }
 renderMotm();
- 
+
 // ---------- WIN/LOSE ----------
 function renderWL(){
   const maxWin = Math.max(...DATA.winners.map(w=>w.count));
