@@ -181,6 +181,9 @@ function drawChart(){
     const el = document.createElement('div');
     el.textContent = p.name;
     el.style.position = 'absolute';
+    el.style.top = '0';
+    el.style.left = '0';
+    el.style.opacity = '0'; // skryté, dokud positionLabels() nedopočítá skutečné místo
     el.style.fontSize = '13px';
     el.style.fontWeight = '600';
     el.style.color = colorFor(p.name, 1);
@@ -233,7 +236,8 @@ function drawChart(){
     plugins:[positionPlugin],
     options:{
       responsive:true, maintainAspectRatio:false,
-      layout:{ padding:{ right: 170 } },
+      animation:false,
+      layout:{ padding:{ right: 170, top: 12, bottom: 12 } },
       interaction:{mode:'index', intersect:false},
       plugins:{ legend:{display:false},
         tooltip:{
@@ -278,7 +282,7 @@ function drawChart(){
     el.addEventListener('click', ()=>{
       const meta = chart.getDatasetMeta(i);
       meta.hidden = !meta.hidden;
-      chart.update();
+      chart.update('none');
     });
   });
 }
