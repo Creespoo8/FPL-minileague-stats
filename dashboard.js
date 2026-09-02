@@ -7,10 +7,10 @@ const colorFor = (name) => {
 };
 const fmt1 = (v) => (v===null || v===undefined) ? '—' : (Math.round(v*10)/10).toString().replace('.', ',');
 const monthCz = {August:'srpen',September:'září',October:'říjen',November:'listopad',December:'prosinec',January:'leden',February:'únor',March:'březen',April:'duben',May:'květen'};
-
+ 
 const app = document.getElementById('app');
 document.title = `${DATA.league_name} — FPL Minileague`;
-
+ 
 // ---------- HERO ----------
 const leader = [...DATA.players].sort((a,b)=>b.total-a.total)[0];
 const heroHTML = `
@@ -35,7 +35,7 @@ const heroHTML = `
   <footer>Data z FPL API${DATA.generated_at ? ' · aktualizováno ' + DATA.generated_at.replace('T',' ').replace('Z',' UTC') : ''} · ${DATA.gw_labels[0]}–${DATA.gw_labels[DATA.gw_labels.length-1]}</footer>
 `;
 app.innerHTML = heroHTML;
-
+ 
 // ---------- NAV ----------
 const tabs = [
   {id:'table', label:'Tabulka'},
@@ -56,7 +56,7 @@ nav.addEventListener('click', (e)=>{
   if(btn.dataset.tab==='chart' && !chartDrawn) drawChart();
 });
 document.getElementById('panel-table').classList.add('active');
-
+ 
 // ---------- TABLE ----------
 let sortKey = 'total', sortDir = 1;
 function renderTable(){
@@ -71,9 +71,12 @@ function renderTable(){
     {k:'max', label:'Max'},
     {k:'min', label:'Min'},
     {k:'consistency', label:'Konzistence'},
-    
   ];
-  const thead = cols.map(c=>`<th class="${c.k==='name'?'':'num'}" data-key="${c.k}">${c.label}${sortKey===c.k?(sortDir===1?' ▲':' ▼'):''}</th>`).join('');
+  const thead = cols.map(c=>{
+    const title = c.k==='consistency' ? ' title="100% × (1 − odchylka bodů / vlastní průměr) — vyšší % = stabilnější výkony"' : '';
+    const arrow = sortKey===c.k ? (sortDir===1?' ▼':' ▲') : '';
+    return `<th class="${c.k==='name'?'':'num'}" data-key="${c.k}"${title}>${c.label}${arrow}</th>`;
+  }).join('');
   const tbody = rows.map(p=>{
     const last8 = p.gws.slice(-8).map(v=>v===null?0:v);
     const maxv = Math.max(...p.gws.filter(v=>v!==null));
@@ -101,13 +104,20 @@ function renderTable(){
   document.querySelectorAll('#panel-table th[data-key]').forEach(th=>{
     th.addEventListener('click', ()=>{
       const k = th.dataset.key;
-      if(sortKey===k) sortDir *= -1; else {sortKey=k; sortDir=-1;}
+      if(sortKey===k){
+        sortDir *= -1;
+      } else {
+        sortKey = k;
+        // Rank a jméno: první klik vzestupně (1, 2, 3… / A-Z).
+        // Všechny číselné statistiky: první klik sestupně (nejlepší nahoře).
+        sortDir = (k==='rank' || k==='name') ? -1 : 1;
+      }
       renderTable();
     });
   });
 }
 renderTable();
-
+ 
 // ---------- CHART ----------
 let chartDrawn = false;
 let activeNames = new Set(DATA.players.map(p=>p.name));
@@ -123,13 +133,13 @@ function drawChart(){
     </div>`;
   const legend = document.getElementById('legend');
   legend.innerHTML = DATA.players.map(p=>`<span class="pill on" style="border-color:${colorFor(p.name)}; background:${colorFor(p.name)}22;" data-name="${p.name}">${p.name}</span>`).join('');
-
+ 
   const cumulative = {};
   DATA.players.forEach(p=>{
     let sum = 0;
     cumulative[p.name] = p.gws.map(v=>{ sum += (v||0); return sum; });
   });
-
+ 
   const ctx = document.getElementById('gwChart').getContext('2d');
   const datasets = DATA.players.map(p=>({
     label: p.name,
@@ -155,7 +165,7 @@ function drawChart(){
       }
     }
   });
-
+ 
   legend.addEventListener('click', (e)=>{
     const pill = e.target.closest('.pill');
     if(!pill) return;
@@ -168,7 +178,7 @@ function drawChart(){
     chart.update();
   });
 }
-
+ 
 // ---------- RECORDS ----------
 function renderRecords(){
   const bestRows = DATA.best.map(r=>`
@@ -196,7 +206,7 @@ function renderRecords(){
     </div>`;
 }
 renderRecords();
-
+ 
 // ---------- MOTM ----------
 function renderMotm(){
   const rows = DATA.motm.map(m=>`
@@ -214,7 +224,7 @@ function renderMotm(){
     </div>`;
 }
 renderMotm();
-
+ 
 // ---------- WIN/LOSE ----------
 function renderWL(){
   const maxWin = Math.max(...DATA.winners.map(w=>w.count));
