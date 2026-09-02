@@ -267,6 +267,14 @@ function drawChart(){
       }
     }
   });
+  // Chart.js zjišťuje skutečnou velikost plátna přes ResizeObserver, který
+  // se spustí až v dalším snímku prohlížeče — ne hned synchronně tady.
+  // Proto počkáme na requestAnimationFrame a graf ještě jednou donutíme
+  // k přepočtu (resize), než popisky napozicujeme.
+  requestAnimationFrame(() => {
+    chart.resize();
+    positionLabels();
+  });
 
   labelEls.forEach((el,i)=>{
     el.addEventListener('mouseenter', ()=>{
