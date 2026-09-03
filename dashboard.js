@@ -1,9 +1,20 @@
 // ---------- helpers ----------
-const PALETTE = ['#00ff85','#e90052','#04f5ff','#ffd166','#c084fc','#ff8c42','#63e6be','#f472b6','#a3e635','#94a3b8'];
-const colorFor = (name) => {
+// Barvy generujeme rovnoměrně po barevném kole podle POČTU manažerů, ne z pevné
+// palety — díky tomu nikdy nedojde k tomu, že by dva manažeři měli stejnou barvu
+// (dřív se to stávalo, když jich bylo víc než barev v paletě).
+const PLAYER_COLORS = (() => {
   const names = DATA.players.map(p=>p.name);
-  const idx = names.indexOf(name);
-  return PALETTE[idx % PALETTE.length];
+  const n = names.length;
+  const map = {};
+  names.forEach((name, i) => {
+    map[name] = { h: Math.round((360 / n) * i), s: 82, l: 58 };
+  });
+  return map;
+})();
+const colorFor = (name, alpha = 1) => {
+  const c = PLAYER_COLORS[name];
+  if (!c) return `rgba(148,163,184,${alpha})`;
+  return `hsla(${c.h}, ${c.s}%, ${c.l}%, ${alpha})`;
 };
 const fmt1 = (v) => (v===null || v===undefined) ? '—' : (Math.round(v*10)/10).toString().replace('.', ',');
 const monthCz = {August:'srpen',September:'září',October:'říjen',November:'listopad',December:'prosinec',January:'leden',February:'únor',March:'březen',April:'duben',May:'květen'};
@@ -58,41 +69,57 @@ nav.addEventListener('click', (e)=>{
 document.getElementById('panel-table').classList.add('active');
 
 // ---------- TABLE ----------
-let sortKey = 'total', sortDir = -1;
+let sortKey = 'total', sortDir = 1;
+// Chipy: vždy jen 4 zkratky pro AKTUÁLNÍ polovinu sezóny (data.json posílá jen tyhle 4,
+// jakmile sezóna přejde do druhé poloviny, backend je nahradí novou sadou).
+const CHIP_ORDER = ['WC', 'FH', 'BB', 'TC'];
+function chipPill(code, gw){
+  if(gw === null || gw === undefined){
+    return `<span class="chip-pill chip-${code.toLowerCase()}">${code}</span>`;
+  }
+  return `<span class="chip-pill chip-${code.toLowerCase()} used">${code}${gw}</span>`;
+}
 function renderTable(){
   const rows = [...DATA.players].sort((a,b)=> (a[sortKey]<b[sortKey]?1:-1) * sortDir);
   const cols = [
     {k:'rank', label:'#'},
     {k:'name', label:'Manažer'},
     {k:'total', label:'Body'},
+    {k:'transfer_cost', label:'Body za přestupy'},
     {k:'avg', label:'Průměr/kolo'},
     {k:'form5', label:'Forma (5)'},
     {k:'max', label:'Max'},
     {k:'min', label:'Min'},
-    {k:'sd', label:'Kolísavost'},
-    {k:'transfer_cost', label:'Body za přestupy'},
+    {k:'consistency', label:'Konzistence'},
   ];
-  const thead = cols.map(c=>`<th class="${c.k==='name'?'':'num'}" data-key="${c.k}">${c.label}${sortKey===c.k?(sortDir===1?' ▲':' ▼'):''}</th>`).join('');
+  const thead = cols.map(c=>{
+    const title = c.k==='consistency' ? ' title="100% × (1 − odchylka bodů / vlastní průměr) — vyšší % = stabilnější výkony"' : '';
+    const arrow = sortKey===c.k ? (sortDir===1?' ▼':' ▲') : '';
+    return `<th class="${c.k==='name'?'':'num'}" data-key="${c.k}"${title}>${c.label}${arrow}</th>`;
+  }).join('') + `<th title="Chipy zahrané v aktuální polovině sezóny">Chipy</th>`;
   const tbody = rows.map(p=>{
     const last8 = p.gws.slice(-8).map(v=>v===null?0:v);
     const maxv = Math.max(...p.gws.filter(v=>v!==null));
     const bars = last8.map(v=>`<i style="height:${Math.max(4,(v/maxv)*20)}px;"></i>`).join('');
+    const chips = p.chips || {};
+    const chipCells = CHIP_ORDER.map(code=>chipPill(code, chips[code])).join('');
     return `<tr>
       <td class="rank">${p.rank}</td>
       <td class="player">${p.name}</td>
       <td class="num total">${p.total}</td>
+      <td class="num">${p.transfer_cost}</td>
       <td class="num">${fmt1(p.avg)}</td>
       <td class="num">${p.form5}</td>
       <td class="num">${p.max}</td>
       <td class="num">${p.min}</td>
-      <td class="num">${fmt1(p.sd)}</td>
-      <td class="num">${p.transfer_cost}</td>
+      <td class="num">${p.consistency===null||p.consistency===undefined?'—':fmt1(p.consistency)+'\u00a0%'}</td>
+      <td class="chips-cell">${chipCells}</td>
     </tr>`;
   }).join('');
   document.getElementById('panel-table').innerHTML = `
     <div class="card">
       <h2>Celková tabulka</h2>
-      <p class="sub">Klikni na název sloupce pro seřazení. Posledních 8 mini sloupečků v hlavě zatím netěžíme — forma je vidět v grafu.</p>
+      <p class="sub">Klikni na název sloupce pro seřazení.</p>
       <div class="table-scroll">
         <table><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>
       </div>
@@ -100,7 +127,14 @@ function renderTable(){
   document.querySelectorAll('#panel-table th[data-key]').forEach(th=>{
     th.addEventListener('click', ()=>{
       const k = th.dataset.key;
-      if(sortKey===k) sortDir *= -1; else {sortKey=k; sortDir=-1;}
+      if(sortKey===k){
+        sortDir *= -1;
+      } else {
+        sortKey = k;
+        // Rank a jméno: první klik vzestupně (1, 2, 3… / A-Z).
+        // Všechny číselné statistiky: první klik sestupně (nejlepší nahoře).
+        sortDir = (k==='rank' || k==='name') ? -1 : 1;
+      }
       renderTable();
     });
   });
@@ -109,62 +143,174 @@ renderTable();
 
 // ---------- CHART ----------
 let chartDrawn = false;
-let activeNames = new Set(DATA.players.map(p=>p.name));
 function drawChart(){
   chartDrawn = true;
   const panel = document.getElementById('panel-chart');
   panel.innerHTML = `
     <div class="card">
-      <h2>Vývoj kumulativních bodů</h2>
-      <p class="sub">Klikni na jméno a schovej/zobraz křivku manažera.</p>
-      <div class="legend-pills" id="legend"></div>
-      <div class="chart-wrap"><canvas id="gwChart"></canvas></div>
+      <h2>Vývoj pořadí v kolech</h2>
+      <p class="sub">Najeď myší na jméno vpravo pro zvýraznění, klikni pro schování/zobrazení. 1. místo = vede ligu po daném kole.</p>
+      <div class="chart-wrap">
+        <canvas id="gwChart"></canvas>
+        <div id="rankLabels" style="position:absolute; top:0; left:0; height:100%; width:100%; pointer-events:none;"></div>
+      </div>
     </div>`;
-  const legend = document.getElementById('legend');
-  legend.innerHTML = DATA.players.map(p=>`<span class="pill on" style="border-color:${colorFor(p.name)}; background:${colorFor(p.name)}22;" data-name="${p.name}">${p.name}</span>`).join('');
 
+  // Kolik kol už bylo odehráno (aspoň jeden manažer má non-null skóre) —
+  // dál za tímto bodem necháváme v datech null, aby graf měl mezeru, ne umělou rovnou čáru.
+  let lastPlayedIdx = -1;
+  DATA.players.forEach(p=>{
+    p.gws.forEach((v, idx)=>{ if(v !== null && idx > lastPlayedIdx) lastPlayedIdx = idx; });
+  });
+  const numGW = lastPlayedIdx + 1;
+  const totalGW = DATA.gw_labels.length; // vždy 38, i když se ještě neodehrálo
+
+  // Kumulativní body po jednotlivých odehraných kolech.
   const cumulative = {};
   DATA.players.forEach(p=>{
     let sum = 0;
-    cumulative[p.name] = p.gws.map(v=>{ sum += (v||0); return sum; });
+    cumulative[p.name] = [];
+    for(let i=0;i<numGW;i++){
+      sum += (p.gws[i] || 0);
+      cumulative[p.name].push(sum);
+    }
   });
+
+  // Z kumulativních bodů spočítáme pořadí (1 = nejvíc bodů) po každém odehraném kole,
+  // zbytek sezóny (dosud neodehraná kola) necháme jako null.
+  const positions = {};
+  DATA.players.forEach(p=>{ positions[p.name] = new Array(totalGW).fill(null); });
+  for(let i=0;i<numGW;i++){
+    const snapshot = DATA.players.map(p=>({name:p.name, pts:cumulative[p.name][i]}));
+    snapshot.sort((a,b)=> b.pts - a.pts);
+    snapshot.forEach((s, rankIdx)=>{ positions[s.name][i] = rankIdx+1; });
+  }
+
+  // Jména napravo od grafu — poziciovaná dynamicky na výšku posledního odehraného
+  // bodu dané křivky, takže vždy odpovídají aktuálnímu pořadí manažera.
+  const rankLabelsEl = document.getElementById('rankLabels');
+  const labelEls = DATA.players.map(p=>{
+    const el = document.createElement('div');
+    el.textContent = p.name;
+    el.style.position = 'absolute';
+    el.style.top = '0';
+    el.style.left = '0';
+    el.style.opacity = '0'; // skryté, dokud positionLabels() nedopočítá skutečné místo
+    el.style.fontSize = '13px';
+    el.style.lineHeight = '1';
+    el.style.fontWeight = '600';
+    el.style.color = colorFor(p.name, 1);
+    el.style.whiteSpace = 'nowrap';
+    el.style.pointerEvents = 'auto';
+    el.style.cursor = 'pointer';
+    el.style.transform = 'translateY(-50%)';
+    rankLabelsEl.appendChild(el);
+    return el;
+  });
+
+  let chart = null;
+  function positionLabels(){
+    if(!chart) return;
+    const area = chart.chartArea;
+    const containerHeight = rankLabelsEl.clientHeight;
+    DATA.players.forEach((p,i)=>{
+      const meta = chart.getDatasetMeta(i);
+      let lastIdx = -1;
+      for(let j=chart.data.datasets[i].data.length-1;j>=0;j--){
+        if(chart.data.datasets[i].data[j] !== null){ lastIdx = j; break; }
+      }
+      const el = labelEls[i];
+      if(lastIdx === -1 || meta.hidden){
+        el.style.opacity = meta.hidden ? '0.3' : '0';
+        return;
+      }
+      el.style.opacity = '1';
+      const point = meta.data[lastIdx];
+      // Srazíme popisek zpátky dovnitř plochy, kdyby jeho skutečná (změřená) výška
+      // sahala za horní/dolní okraj — řeší to natvrdo, bez ohledu na velikost fontu.
+      const halfH = (el.offsetHeight || 16) / 2;
+      const top = Math.min(Math.max(point.y, halfH), containerHeight - halfH);
+      el.style.top = top + 'px';
+      el.style.left = (area.right + 10) + 'px';
+    });
+  }
+  const positionPlugin = { id:'positionPlugin', afterRender(){ positionLabels(); } };
 
   const ctx = document.getElementById('gwChart').getContext('2d');
   const datasets = DATA.players.map(p=>({
     label: p.name,
-    data: cumulative[p.name],
+    data: positions[p.name],
     borderColor: colorFor(p.name),
     backgroundColor: colorFor(p.name),
-    borderWidth: 2,
-    pointRadius: 0,
-    pointHoverRadius: 4,
+    borderWidth: 2.5,
+    pointRadius: 2,
+    pointHoverRadius: 5,
     tension: 0.25,
+    spanGaps: false,
+    clip: false,
   }));
-  const chart = new Chart(ctx, {
+  chart = new Chart(ctx, {
     type:'line',
     data:{ labels: DATA.gw_labels.map(l=>l.replace('GW ','')), datasets },
+    plugins:[positionPlugin],
     options:{
       responsive:true, maintainAspectRatio:false,
-      interaction:{mode:'nearest', intersect:false},
+      animation:false,
+      layout:{ padding:{ right: 170, top: 12, bottom: 12 } },
+      interaction:{mode:'index', intersect:false},
       plugins:{ legend:{display:false},
-        tooltip:{ callbacks:{ title:(items)=> 'GW '+items[0].label } } },
+        tooltip:{
+          itemSort:(a,b)=> a.parsed.y - b.parsed.y,
+          filter:(item)=> item.parsed.y !== null,
+          callbacks:{
+            title:(items)=> 'GW '+items[0].label,
+            label:(item)=> `${item.parsed.y}. ${item.dataset.label}`
+          }
+        } },
       scales:{
         x:{ grid:{color:'rgba(242,238,244,0.06)'}, ticks:{color:'#c6b9cb', maxTicksLimit:12} },
-        y:{ grid:{color:'rgba(242,238,244,0.06)'}, ticks:{color:'#c6b9cb'} }
+        y:{
+          reverse:true,
+          min:1,
+          max:DATA.players.length,
+          ticks:{color:'#c6b9cb', stepSize:1, precision:0},
+          grid:{color:'rgba(242,238,244,0.06)'}
+        }
       }
     }
   });
+  // Chart.js zjišťuje skutečnou velikost plátna přes ResizeObserver, který
+  // se spustí až v dalším snímku prohlížeče — ne hned synchronně tady.
+  // Proto počkáme na requestAnimationFrame a graf ještě jednou donutíme
+  // k přepočtu (resize), než popisky napozicujeme.
+  requestAnimationFrame(() => {
+    chart.resize();
+    positionLabels();
+  });
 
-  legend.addEventListener('click', (e)=>{
-    const pill = e.target.closest('.pill');
-    if(!pill) return;
-    const name = pill.dataset.name;
-    const ds = chart.data.datasets.find(d=>d.label===name);
-    const idx = chart.data.datasets.indexOf(ds);
-    const meta = chart.getDatasetMeta(idx);
-    meta.hidden = !meta.hidden;
-    pill.classList.toggle('on', !meta.hidden);
-    chart.update();
+  labelEls.forEach((el,i)=>{
+    el.addEventListener('mouseenter', ()=>{
+      chart.data.datasets.forEach((ds,j)=>{
+        const isTarget = j===i;
+        ds.borderColor = colorFor(ds.label, isTarget ? 1 : 0.1);
+        ds.borderWidth = isTarget ? 4 : 2.5;
+        labelEls[j].style.opacity = isTarget ? '1' : '0.25';
+      });
+      chart.update('none');
+    });
+    el.addEventListener('mouseleave', ()=>{
+      chart.data.datasets.forEach((ds,j)=>{
+        ds.borderColor = colorFor(ds.label, 1);
+        ds.borderWidth = 2.5;
+        labelEls[j].style.opacity = '1';
+      });
+      chart.update('none');
+    });
+    el.addEventListener('click', ()=>{
+      const meta = chart.getDatasetMeta(i);
+      meta.hidden = !meta.hidden;
+      chart.update('none');
+    });
   });
 }
 

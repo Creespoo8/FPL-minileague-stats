@@ -28,6 +28,11 @@ RECORD_RANK_CUTOFF = 15  # how many distinct point-tiers to keep in best/worst l
 REQUEST_TIMEOUT = 30
 HEADERS = {"User-Agent": "fpl-minileague-stats/1.0 (+github actions data sync)"}
 
+# FPL chip codes -> short labels used in the dashboard's "Chipy" column.
+# There are 2 of each chip per season (one per half); we only ever show the
+# 4 belonging to whichever half is currently in progress.
+CHIP_LABELS = {"wildcard": "WC", "freehit": "FH", "bboost": "BB", "3xc": "TC"}
+
 
 def fetch_json(url: str, params: dict | None = None) -> dict:
     resp = requests.get(url, params=params, timeout=REQUEST_TIMEOUT, headers=HEADERS)
@@ -115,6 +120,7 @@ def build_dataset() -> dict:
 
         gws: list[float | None] = [None] * num_gw
         transfer_cost_total = 0
+        raw_chips = history.get("chips", [])
         for gw in history["current"]:
             idx = gw["event"] - 1
             if idx >= num_gw:
@@ -148,17 +154,41 @@ def build_dataset() -> dict:
                 "avg": round(total / len(played), 1) if played else None,
                 "form5": sum(played[-5:]) if played else 0,
                 "sd": round(statistics.pstdev(played), 1) if len(played) > 1 else 0,
+                # Konzistence = 100 * (1 - SD / průměr) — vyšší % = stabilnější výkony.
+                "consistency": (
+                    round(100 * (1 - statistics.pstdev(played) / (total / len(played))), 1)
+                    if len(played) > 1 and total > 0
+                    else None
+                ),
                 "max": max(played) if played else None,
                 "min": min(played) if played else None,
                 "half1": sum(v for v in gws[:half] if v is not None),
                 "half2": sum(v for v in gws[half:] if v is not None),
                 "gws": gws,
+                "_raw_chips": raw_chips,
             }
         )
 
     players.sort(key=lambda p: p["total"], reverse=True)
     for i, p in enumerate(players):
         p["rank"] = i + 1
+
+    # Which half of the season are we currently in? Same GW1..half / half+1..num_gw
+    # split already used for half1/half2 above. We look at the last gameweek with
+    # any recorded score to know how far the season has actually progressed.
+    played_gws = [gw for gw, scores in per_gw_scores.items() if scores]
+    current_gw = max(played_gws) if played_gws else 0
+    season_half = num_gw // 2
+    half_start, half_end = (1, season_half) if current_gw <= season_half else (season_half + 1, num_gw)
+
+    for p in players:
+        chips_now: dict[str, int | None] = {label: None for label in CHIP_LABELS.values()}
+        for chip in p.pop("_raw_chips"):
+            label = CHIP_LABELS.get(chip.get("name"))
+            event = chip.get("event")
+            if label and event is not None and half_start <= event <= half_end:
+                chips_now[label] = event
+        p["chips"] = chips_now
 
     best_sorted = sorted(all_gw_records, key=lambda r: r["points"], reverse=True)
     best_ranks = competition_ranks([r["points"] for r in best_sorted])
