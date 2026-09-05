@@ -67,8 +67,12 @@ def fetch_entry_history(entry_id: int) -> dict:
     return fetch_json(f"{API_BASE}/entry/{entry_id}/history/")
 
 
-def build_gw_labels_and_months(events: list[dict]) -> tuple[list[str], list[str | None]]:
-    labels, months = [], []
+def build_gw_labels_and_months(
+    events: list[dict],
+) -> tuple[list[str], list[str | None], list[bool]]:
+    """Also returns, per gameweek, whether FPL has finalised it (`data_checked`) —
+    i.e. bonus points and prices are locked in, not just that the matches ended."""
+    labels, months, data_checked = [], [], []
     for e in sorted(events, key=lambda x: x["id"]):
         labels.append(f"GW {e['id']:02d}")
         deadline = e.get("deadline_time")
@@ -77,7 +81,20 @@ def build_gw_labels_and_months(events: list[dict]) -> tuple[list[str], list[str 
             dt = datetime.fromisoformat(deadline.replace("Z", "+00:00"))
             month_name = dt.strftime("%B")
         months.append(month_name)
-    return labels, months
+        data_checked.append(bool(e.get("data_checked")))
+    return labels, months, data_checked
+
+
+def current_gw_info(events: list[dict]) -> tuple[int | None, bool, bool]:
+    """Which gameweek is 'now' from FPL's own point of view, and its status."""
+    current = next((e for e in events if e.get("is_current")), None)
+    if current is None:
+        current = next((e for e in events if e.get("is_next")), None)
+    if current is None and events:
+        current = max(events, key=lambda e: e["id"])
+    if current is None:
+        return None, True, True
+    return current["id"], bool(current.get("finished")), bool(current.get("data_checked"))
 
 
 def competition_ranks(values_desc: list) -> list[int]:
@@ -102,9 +119,10 @@ def season_label_from_events(events: list[dict]) -> str:
 def build_dataset() -> dict:
     bootstrap = fetch_bootstrap()
     events = bootstrap["events"]
-    gw_labels, gw_months = build_gw_labels_and_months(events)
+    gw_labels, gw_months, gw_data_checked = build_gw_labels_and_months(events)
     num_gw = len(gw_labels)
     season = season_label_from_events(events)
+    cur_gw_num, cur_gw_finished, cur_gw_data_checked = current_gw_info(events)
 
     league_name, standings = fetch_league_standings(LEAGUE_ID)
 
@@ -143,6 +161,11 @@ def build_dataset() -> dict:
                 monthly_totals[month][name] = monthly_totals[month].get(name, 0) + points
 
         played = [v for v in gws if v is not None]
+        # Min a Konzistence smí čerpat jen z kol, která FPL už definitivně uzavřelo
+        # (data_checked) — jinak by rozehrané kolo umělo podhodnotit obojí, protože
+        # spousta hráčů má zatím 0 bodů (ještě nehráli) a bonusy nejsou finální.
+        played_finished = [v for i, v in enumerate(gws) if v is not None and gw_data_checked[i]]
+        avg_finished = sum(played_finished) / len(played_finished) if played_finished else None
         total = sum(played)
         half = num_gw // 2
 
@@ -151,17 +174,19 @@ def build_dataset() -> dict:
                 "name": name,
                 "total": total,
                 "transfer_cost": transfer_cost_total,
-                "avg": round(total / len(played), 1) if played else None,
+                "avg": round(avg_finished, 1) if avg_finished is not None else None,
                 "form5": sum(played[-5:]) if played else 0,
                 "sd": round(statistics.pstdev(played), 1) if len(played) > 1 else 0,
                 # Konzistence = 100 * (1 - SD / průměr) — vyšší % = stabilnější výkony.
+                # Počítáno jen z dokončených kol, ať ji nezkresluje rozehrané kolo.
                 "consistency": (
-                    round(100 * (1 - statistics.pstdev(played) / (total / len(played))), 1)
-                    if len(played) > 1 and total > 0
+                    round(100 * (1 - statistics.pstdev(played_finished) / avg_finished), 1)
+                    if len(played_finished) > 1 and avg_finished
                     else None
                 ),
                 "max": max(played) if played else None,
-                "min": min(played) if played else None,
+                "min": min(played_finished) if played_finished else None,
+                "current_gw_points": gws[cur_gw_num - 1] if cur_gw_num else None,
                 "half1": sum(v for v in gws[:half] if v is not None),
                 "half2": sum(v for v in gws[half:] if v is not None),
                 "gws": gws,
@@ -255,6 +280,9 @@ def build_dataset() -> dict:
         "league_name": league_name,
         "season": season,
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "current_gw": cur_gw_num,
+        "current_gw_finished": cur_gw_finished,
+        "current_gw_data_checked": cur_gw_data_checked,
         "gw_labels": gw_labels,
         "gw_months": gw_months,
         "players": players,
