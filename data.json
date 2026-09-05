@@ -1,7 +1,7 @@
 {
   "league_name": "FPL okresu Benešov",
   "season": "2026/27",
-  "generated_at": "2026-09-05T12:47:28Z",
+  "generated_at": "2026-09-05T12:55:30Z",
   "current_gw": 3,
   "current_gw_finished": false,
   "current_gw_data_checked": false,
@@ -975,6 +975,7 @@
   "motm": [
     {
       "month": "August",
+      "closed": true,
       "gold": {
         "name": "Martin Šípek",
         "points": 184.0
@@ -990,6 +991,7 @@
     },
     {
       "month": "September",
+      "closed": false,
       "gold": {
         "name": "Milan Pádivý",
         "points": 13.0
@@ -1004,6 +1006,22 @@
       }
     }
   ],
+  "last_closed_month": {
+    "month": "August",
+    "closed": true,
+    "gold": {
+      "name": "Martin Šípek",
+      "points": 184.0
+    },
+    "silver": {
+      "name": "Josef Mokráň",
+      "points": 175.0
+    },
+    "bronze": {
+      "name": "Tomáš Kreps",
+      "points": 173.0
+    }
+  },
   "winners": [
     {
       "rank": 1,
