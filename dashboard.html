@@ -1,415 +1,197 @@
-// ---------- helpers ----------
-// Barvy generujeme rovnoměrně po barevném kole podle POČTU manažerů, ne z pevné
-// palety — díky tomu nikdy nedojde k tomu, že by dva manažeři měli stejnou barvu
-// (dřív se to stávalo, když jich bylo víc než barev v paletě).
-const PLAYER_COLORS = (() => {
-  const names = DATA.players.map(p=>p.name);
-  const n = names.length;
-  const map = {};
-  names.forEach((name, i) => {
-    map[name] = { h: Math.round((360 / n) * i), s: 82, l: 58 };
-  });
-  return map;
-})();
-const colorFor = (name, alpha = 1) => {
-  const c = PLAYER_COLORS[name];
-  if (!c) return `rgba(148,163,184,${alpha})`;
-  return `hsla(${c.h}, ${c.s}%, ${c.l}%, ${alpha})`;
-};
-const fmt1 = (v) => (v===null || v===undefined) ? '—' : (Math.round(v*10)/10).toString().replace('.', ',');
-const monthCz = {August:'srpen',September:'září',October:'říjen',November:'listopad',December:'prosinec',January:'leden',February:'únor',March:'březen',April:'duben',May:'květen'};
-
-const app = document.getElementById('app');
-document.title = `${DATA.league_name} — FPL Minileague`;
-
-// ---------- HERO ----------
-const leader = [...DATA.players].sort((a,b)=>b.total-a.total)[0];
-const bestForm = [...DATA.players].sort((a,b)=>b.form5-a.form5)[0];
-const motmCard = DATA.last_closed_month;
-const seasonShort = DATA.season ? DATA.season.slice(2) : '';
-const heroHTML = `
-  <div class="hero">
-    <div class="hero-left">
-      <p class="eyebrow">${DATA.league_name}</p>
-      <h1>Season ${seasonShort}</h1>
-      <p class="gw-status">Gameweek ${DATA.current_gw ?? '—'}
-        <span class="status-pill ${DATA.current_gw_data_checked ? 'status-done' : 'status-live'}">
-          ${DATA.current_gw_data_checked ? 'dokončeno' : 'probíhá'}
-        </span>
-      </p>
-    </div>
-    <div class="hero-cards">
-      <div class="leader-card">
-        <div class="label">Vede sezónu</div>
-        <div class="name">${leader.name}</div>
-        <div class="points">${leader.total}<span>bodů</span></div>
-      </div>
-      <div class="leader-card">
-        <div class="label">Manažer měsíce${motmCard ? ' · ' + monthCz[motmCard.month] : ''}</div>
-        <div class="name">${motmCard ? motmCard.gold.name : '—'}</div>
-        <div class="points">${motmCard ? motmCard.gold.points : '—'}<span>${motmCard ? 'bodů' : ''}</span></div>
-      </div>
-      <div class="leader-card">
-        <div class="label">Nejlepší forma (5)</div>
-        <div class="name">${bestForm.name}</div>
-        <div class="points">${bestForm.form5}<span>bodů</span></div>
-      </div>
-    </div>
-  </div>
-  <nav id="nav"></nav>
-  <section class="panel" id="panel-table"></section>
-  <section class="panel" id="panel-chart"></section>
-  <section class="panel" id="panel-records"></section>
-  <section class="panel" id="panel-motm"></section>
-  <section class="panel" id="panel-wl"></section>
-  <footer>Data z FPL API${DATA.generated_at ? ' · aktualizováno ' + DATA.generated_at.replace('T',' ').replace('Z',' UTC') : ''} · ${DATA.gw_labels[0]}–${DATA.gw_labels[DATA.gw_labels.length-1]}</footer>
-`;
-app.innerHTML = heroHTML;
-
-// ---------- NAV ----------
-const tabs = [
-  {id:'table', label:'Tabulka'},
-  {id:'chart', label:'Vývoj v kolech'},
-  {id:'records', label:'Rekordy'},
-  {id:'motm', label:'Manažer měsíce'},
-  {id:'wl', label:'Výhry & prohry kola'},
-];
-const nav = document.getElementById('nav');
-nav.innerHTML = tabs.map((t,i)=>`<button data-tab="${t.id}" class="${i===0?'active':''}">${t.label}</button>`).join('');
-nav.addEventListener('click', (e)=>{
-  const btn = e.target.closest('button');
-  if(!btn) return;
-  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  document.querySelectorAll('section.panel').forEach(s=>s.classList.remove('active'));
-  document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
-  if(btn.dataset.tab==='chart' && !chartDrawn) drawChart();
-});
-document.getElementById('panel-table').classList.add('active');
-
-// ---------- TABLE ----------
-let sortKey = 'total', sortDir = 1;
-// Chipy: vždy jen 4 zkratky pro AKTUÁLNÍ polovinu sezóny (data.json posílá jen tyhle 4,
-// jakmile sezóna přejde do druhé poloviny, backend je nahradí novou sadou).
-const CHIP_ORDER = ['WC', 'FH', 'BB', 'TC'];
-function chipPill(code, gw){
-  if(gw === null || gw === undefined){
-    return `<span class="chip-pill chip-${code.toLowerCase()}">${code}</span>`;
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FPL Minileague</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root{
+    --purple-950:#1c0021;
+    --purple-900:#2b0030;
+    --purple-800:#37003c;
+    --purple-700:#4a0a52;
+    --panel:#33073a;
+    --line: rgba(242,238,244,0.10);
+    --green:#00ff85;
+    --pink:#e90052;
+    --cyan:#04f5ff;
+    --gold:#ffd166;
+    --text:#f2eef4;
+    --text-dim:#c6b9cb;
+    --text-mute:#9a8aa0;
+    --radius: 14px;
   }
-  return `<span class="chip-pill chip-${code.toLowerCase()} used">${code}${gw}</span>`;
-}
-function renderTable(){
-  const rows = [...DATA.players].sort((a,b)=> (a[sortKey]<b[sortKey]?1:-1) * sortDir);
-  const cols = [
-    {k:'rank', label:'#'},
-    {k:'name', label:'Manažer'},
-    {k:'total', label:'Body'},
-    {k:'current_gw_points', label:`GW ${DATA.current_gw ?? ''}`},
-    {k:'transfer_cost', label:'Hits'},
-    {k:'avg', label:'Průměr'},
-    {k:'form5', label:'Forma (5)'},
-    {k:'max', label:'Max'},
-    {k:'min', label:'Min'},
-    {k:'consistency', label:'Konzistence'},
-  ];
-  const colTitles = {
-    consistency: '100% × (1 − odchylka bodů / vlastní průměr), počítáno jen z dokončených kol — vyšší % = stabilnější výkony',
-    min: 'Nejhorší výsledek z dokončených kol (rozehrané kolo se nepočítá, dokud FPL nedopočítá bonusy)',
-    current_gw_points: DATA.current_gw_data_checked ? 'Body v posledním odehraném kole' : 'Průběžné body v rozehraném kole — ještě se mohou měnit (bonusy, hráči co ještě nehráli)',
-  };
-  const thead = cols.map(c=>{
-    const title = colTitles[c.k] ? ` title="${colTitles[c.k]}"` : '';
-    const arrow = sortKey===c.k ? (sortDir===1?' ▼':' ▲') : '';
-    return `<th class="${c.k==='name'?'':'num'}" data-key="${c.k}"${title}>${c.label}${arrow}</th>`;
-  }).join('') + `<th title="Chipy zahrané v aktuální polovině sezóny">Chipy</th>`;
-  const tbody = rows.map(p=>{
-    const last8 = p.gws.slice(-8).map(v=>v===null?0:v);
-    const maxv = Math.max(...p.gws.filter(v=>v!==null));
-    const bars = last8.map(v=>`<i style="height:${Math.max(4,(v/maxv)*20)}px;"></i>`).join('');
-    const chips = p.chips || {};
-    const chipCells = CHIP_ORDER.map(code=>chipPill(code, chips[code])).join('');
-    return `<tr>
-      <td class="rank">${p.rank}</td>
-      <td class="player">${p.name}</td>
-      <td class="num total">${p.total}</td>
-      <td class="num">${p.current_gw_points===null||p.current_gw_points===undefined?'—':p.current_gw_points}</td>
-      <td class="num">${p.transfer_cost}</td>
-      <td class="num">${p.avg===null||p.avg===undefined?'—':p.avg}</td>
-      <td class="num">${p.form5}</td>
-      <td class="num">${p.max}</td>
-      <td class="num">${p.min===null||p.min===undefined?'—':p.min}</td>
-      <td class="num">${p.consistency===null||p.consistency===undefined?'—':fmt1(p.consistency)+'\u00a0%'}</td>
-      <td class="chips-cell">${chipCells}</td>
-    </tr>`;
-  }).join('');
-  document.getElementById('panel-table').innerHTML = `
-    <div class="card">
-      <h2>Celková tabulka</h2>
-      <p class="sub">Klikni na název sloupce pro seřazení.</p>
-      <div class="table-scroll">
-        <table><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>
-      </div>
-    </div>`;
-  document.querySelectorAll('#panel-table th[data-key]').forEach(th=>{
-    th.addEventListener('click', ()=>{
-      const k = th.dataset.key;
-      if(sortKey===k){
-        sortDir *= -1;
-      } else {
-        sortKey = k;
-        // Rank a jméno: první klik vzestupně (1, 2, 3… / A-Z).
-        // Všechny číselné statistiky: první klik sestupně (nejlepší nahoře).
-        sortDir = (k==='rank' || k==='name') ? -1 : 1;
-      }
-      renderTable();
-    });
-  });
-}
-renderTable();
-
-// ---------- CHART ----------
-let chartDrawn = false;
-function drawChart(){
-  chartDrawn = true;
-  const panel = document.getElementById('panel-chart');
-  panel.innerHTML = `
-    <div class="card">
-      <h2>Vývoj pořadí v kolech</h2>
-      <p class="sub">Najeď myší na jméno vpravo pro zvýraznění, klikni pro schování/zobrazení. 1. místo = vede ligu po daném kole.</p>
-      <div class="chart-wrap">
-        <canvas id="gwChart"></canvas>
-        <div id="rankLabels" style="position:absolute; top:0; left:0; height:100%; width:100%; pointer-events:none;"></div>
-      </div>
-    </div>`;
-
-  // Kolik kol už bylo odehráno (aspoň jeden manažer má non-null skóre) —
-  // dál za tímto bodem necháváme v datech null, aby graf měl mezeru, ne umělou rovnou čáru.
-  let lastPlayedIdx = -1;
-  DATA.players.forEach(p=>{
-    p.gws.forEach((v, idx)=>{ if(v !== null && idx > lastPlayedIdx) lastPlayedIdx = idx; });
-  });
-  const numGW = lastPlayedIdx + 1;
-  const totalGW = DATA.gw_labels.length; // vždy 38, i když se ještě neodehrálo
-
-  // Kumulativní body po jednotlivých odehraných kolech.
-  const cumulative = {};
-  DATA.players.forEach(p=>{
-    let sum = 0;
-    cumulative[p.name] = [];
-    for(let i=0;i<numGW;i++){
-      sum += (p.gws[i] || 0);
-      cumulative[p.name].push(sum);
-    }
-  });
-
-  // Z kumulativních bodů spočítáme pořadí (1 = nejvíc bodů) po každém odehraném kole,
-  // zbytek sezóny (dosud neodehraná kola) necháme jako null.
-  const positions = {};
-  DATA.players.forEach(p=>{ positions[p.name] = new Array(totalGW).fill(null); });
-  for(let i=0;i<numGW;i++){
-    const snapshot = DATA.players.map(p=>({name:p.name, pts:cumulative[p.name][i]}));
-    snapshot.sort((a,b)=> b.pts - a.pts);
-    snapshot.forEach((s, rankIdx)=>{ positions[s.name][i] = rankIdx+1; });
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1100px 500px at 12% -10%, rgba(0,255,133,0.10), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(233,0,82,0.14), transparent 55%),
+      var(--purple-900);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
   }
+  .wrap{max-width:1100px; margin:0 auto; padding:32px 20px 80px;}
 
-  // Jména napravo od grafu — poziciovaná dynamicky na výšku posledního odehraného
-  // bodu dané křivky, takže vždy odpovídají aktuálnímu pořadí manažera.
-  const rankLabelsEl = document.getElementById('rankLabels');
-  const labelEls = DATA.players.map(p=>{
-    const el = document.createElement('div');
-    el.textContent = p.name;
-    el.style.position = 'absolute';
-    el.style.top = '0';
-    el.style.left = '0';
-    el.style.opacity = '0'; // skryté, dokud positionLabels() nedopočítá skutečné místo
-    el.style.fontSize = '13px';
-    el.style.lineHeight = '1';
-    el.style.fontWeight = '600';
-    el.style.color = colorFor(p.name, 1);
-    el.style.whiteSpace = 'nowrap';
-    el.style.pointerEvents = 'auto';
-    el.style.cursor = 'pointer';
-    el.style.transform = 'translateY(-50%)';
-    rankLabelsEl.appendChild(el);
-    return el;
-  });
+  h1,h2,h3,.num{font-family:'Space Grotesk',sans-serif;}
 
-  let chart = null;
-  function positionLabels(){
-    if(!chart) return;
-    const area = chart.chartArea;
-    const containerHeight = rankLabelsEl.clientHeight;
-    DATA.players.forEach((p,i)=>{
-      const meta = chart.getDatasetMeta(i);
-      let lastIdx = -1;
-      for(let j=chart.data.datasets[i].data.length-1;j>=0;j--){
-        if(chart.data.datasets[i].data[j] !== null){ lastIdx = j; break; }
-      }
-      const el = labelEls[i];
-      if(lastIdx === -1 || meta.hidden){
-        el.style.opacity = meta.hidden ? '0.3' : '0';
-        return;
-      }
-      el.style.opacity = '1';
-      const point = meta.data[lastIdx];
-      // Srazíme popisek zpátky dovnitř plochy, kdyby jeho skutečná (změřená) výška
-      // sahala za horní/dolní okraj — řeší to natvrdo, bez ohledu na velikost fontu.
-      const halfH = (el.offsetHeight || 16) / 2;
-      const top = Math.min(Math.max(point.y, halfH), containerHeight - halfH);
-      el.style.top = top + 'px';
-      el.style.left = (area.right + 10) + 'px';
-    });
+  /* ---------- HERO ---------- */
+  .hero{
+    display:flex; flex-wrap:wrap; gap:28px;
+    justify-content:space-between; align-items:flex-end;
+    border-bottom:1px solid var(--line);
+    padding-bottom:28px; margin-bottom:28px;
   }
-  const positionPlugin = { id:'positionPlugin', afterRender(){ positionLabels(); } };
+  .hero-left .eyebrow{
+    color:var(--green); font-weight:600; font-size:13px; letter-spacing:0.02em;
+    margin:0 0 6px;
+  }
+  .hero-left h1{
+    font-size:clamp(28px,5vw,42px); line-height:1.05; margin:0 0 8px; font-weight:700;
+  }
+  .hero-left p{color:var(--text-dim); margin:0; max-width:520px; font-size:15px;}
+  .hero-left p.gw-status{display:flex; align-items:center; gap:8px; font-weight:600;}
+  .status-pill{
+    display:inline-flex; align-items:center; font-size:11px; font-weight:700;
+    letter-spacing:0.03em; text-transform:uppercase; padding:3px 9px; border-radius:999px;
+  }
+  .status-pill.status-done{background:rgba(0,255,133,0.16); color:var(--green);}
+  .status-pill.status-live{background:rgba(255,209,102,0.16); color:var(--gold);}
+  .hero-cards{display:flex; gap:14px; flex-wrap:wrap;}
+  .leader-card{
+    background:linear-gradient(160deg, var(--panel), var(--purple-800));
+    border:1px solid var(--line); border-radius:var(--radius);
+    padding:16px 20px; min-width:170px;
+  }
+  .leader-card .label{color:var(--text-mute); font-size:12px; margin-bottom:6px;}
+  .leader-card .name{font-size:17px; font-weight:700; margin-bottom:8px;}
+  .leader-card .points{font-size:28px; font-weight:700; color:var(--green); line-height:1;}
+  .leader-card .points span{font-size:13px; color:var(--text-mute); font-weight:500; margin-left:6px;}
 
-  const ctx = document.getElementById('gwChart').getContext('2d');
-  const datasets = DATA.players.map(p=>({
-    label: p.name,
-    data: positions[p.name],
-    borderColor: colorFor(p.name),
-    backgroundColor: colorFor(p.name),
-    borderWidth: 2.5,
-    pointRadius: 2,
-    pointHoverRadius: 5,
-    tension: 0.25,
-    spanGaps: false,
-    clip: false,
-  }));
-  chart = new Chart(ctx, {
-    type:'line',
-    data:{ labels: DATA.gw_labels.map(l=>l.replace('GW ','')), datasets },
-    plugins:[positionPlugin],
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      animation:false,
-      layout:{ padding:{ right: 170, top: 12, bottom: 12 } },
-      interaction:{mode:'index', intersect:false},
-      plugins:{ legend:{display:false},
-        tooltip:{
-          itemSort:(a,b)=> a.parsed.y - b.parsed.y,
-          filter:(item)=> item.parsed.y !== null,
-          callbacks:{
-            title:(items)=> 'GW '+items[0].label,
-            label:(item)=> `${item.parsed.y}. ${item.dataset.label}`
-          }
-        } },
-      scales:{
-        x:{ grid:{color:'rgba(242,238,244,0.06)'}, ticks:{color:'#c6b9cb', maxTicksLimit:12} },
-        y:{
-          reverse:true,
-          min:1,
-          max:DATA.players.length,
-          ticks:{color:'#c6b9cb', stepSize:1, precision:0},
-          grid:{color:'rgba(242,238,244,0.06)'}
-        }
-      }
-    }
-  });
-  // Chart.js zjišťuje skutečnou velikost plátna přes ResizeObserver, který
-  // se spustí až v dalším snímku prohlížeče — ne hned synchronně tady.
-  // Proto počkáme na requestAnimationFrame a graf ještě jednou donutíme
-  // k přepočtu (resize), než popisky napozicujeme.
-  requestAnimationFrame(() => {
-    chart.resize();
-    positionLabels();
-  });
+  /* ---------- NAV ---------- */
+  nav{
+    display:flex; gap:6px; flex-wrap:wrap;
+    margin-bottom:28px; border-bottom:1px solid var(--line); padding-bottom:2px;
+  }
+  nav button{
+    background:none; border:none; color:var(--text-mute);
+    font-family:'Inter',sans-serif; font-weight:600; font-size:14px;
+    padding:10px 14px; cursor:pointer; border-radius:8px 8px 0 0;
+    position:relative; top:1px;
+  }
+  nav button.active{
+    color:var(--text); border-bottom:2px solid var(--green);
+  }
+  nav button:hover{color:var(--text);}
 
-  labelEls.forEach((el,i)=>{
-    el.addEventListener('mouseenter', ()=>{
-      chart.data.datasets.forEach((ds,j)=>{
-        const isTarget = j===i;
-        ds.borderColor = colorFor(ds.label, isTarget ? 1 : 0.1);
-        ds.borderWidth = isTarget ? 4 : 2.5;
-        labelEls[j].style.opacity = isTarget ? '1' : '0.25';
-      });
-      chart.update('none');
-    });
-    el.addEventListener('mouseleave', ()=>{
-      chart.data.datasets.forEach((ds,j)=>{
-        ds.borderColor = colorFor(ds.label, 1);
-        ds.borderWidth = 2.5;
-        labelEls[j].style.opacity = '1';
-      });
-      chart.update('none');
-    });
-    el.addEventListener('click', ()=>{
-      const meta = chart.getDatasetMeta(i);
-      meta.hidden = !meta.hidden;
-      chart.update('none');
-    });
-  });
-}
+  section.panel{display:none;}
+  section.panel.active{display:block; animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
 
-// ---------- RECORDS ----------
-function renderRecords(){
-  const bestRows = DATA.best.map(r=>`
-    <div class="rec-row">
-      <span class="rec-rank">${r.rank}.</span>
-      <span class="rec-name">${r.name}</span>
-      <span class="rec-meta">${r.gw}</span>
-      <span class="rec-pts good">${r.points}</span>
-    </div>`).join('');
-  const worstRows = DATA.worst.map(r=>`
-    <div class="rec-row">
-      <span class="rec-rank">${r.rank}.</span>
-      <span class="rec-name">${r.name}</span>
-      <span class="rec-meta">${r.gw}</span>
-      <span class="rec-pts bad">${r.points}</span>
-    </div>`).join('');
-  document.getElementById('panel-records').innerHTML = `
-    <div class="card">
-      <h2>Nejlepší a nejhorší výkony v kole</h2>
-      <p class="sub">TOP záznamy napříč celou sezónou, bez ohledu na to, kdo je zrovna nahoře v tabulce.</p>
-      <div class="records-grid">
-        <div><h3 style="font-size:14px;color:var(--green);margin:0 0 8px;">Nejlepší kola</h3>${bestRows}</div>
-        <div><h3 style="font-size:14px;color:var(--pink);margin:0 0 8px;">Nejhorší kola</h3>${worstRows}</div>
-      </div>
-    </div>`;
-}
-renderRecords();
+  .card{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:20px; margin-bottom:20px;
+  }
+  .card h2{font-size:17px; margin:0 0 4px; font-weight:700;}
+  .card .sub{color:var(--text-mute); font-size:13px; margin:0 0 16px;}
 
-// ---------- MOTM ----------
-function renderMotm(){
-  const rows = DATA.motm.map(m=>`
-    <div class="motm-row">
-      <div class="motm-month">${monthCz[m.month]||m.month}</div>
-      <div class="medal"><span class="medal-dot" style="background:var(--gold);"></span><div><div class="medal-name">${m.gold.name}</div><div class="medal-pts">${m.gold.points} b.</div></div></div>
-      <div class="medal"><span class="medal-dot" style="background:#c9c9d4;"></span><div><div class="medal-name">${m.silver.name}</div><div class="medal-pts">${m.silver.points} b.</div></div></div>
-      <div class="medal"><span class="medal-dot" style="background:#cd8a4d;"></span><div><div class="medal-name">${m.bronze.name}</div><div class="medal-pts">${m.bronze.points} b.</div></div></div>
-    </div>`).join('');
-  document.getElementById('panel-motm').innerHTML = `
-    <div class="card">
-      <h2>Manažer měsíce</h2>
-      <p class="sub">Součet bodů v rámci kalendářního měsíce — zlato, stříbro, bronz.</p>
-      <div class="motm-list">${rows}</div>
-    </div>`;
-}
-renderMotm();
+  /* ---------- TABLE ---------- */
+  table{width:100%; border-collapse:collapse; font-size:14px;}
+  th{
+    text-align:left; color:var(--text-mute); font-weight:600; font-size:12px;
+    padding:8px 10px; border-bottom:1px solid var(--line); cursor:pointer; white-space:nowrap;
+  }
+  th:hover{color:var(--text);}
+  th.num, td.num{text-align:right;}
+  td{padding:10px 10px; border-bottom:1px solid var(--line); white-space:nowrap;}
+  tr:last-child td{border-bottom:none;}
+  tr.me td{color:var(--text);}
+  td.rank{color:var(--text-mute); font-variant-numeric:tabular-nums;}
+  td.player{font-weight:600;}
+  td.total{color:var(--green); font-weight:700; font-variant-numeric:tabular-nums;}
+  .table-scroll{overflow-x:auto;}
+  .form-bar{display:flex; gap:2px; align-items:flex-end; height:22px;}
+  .form-bar i{display:block; width:4px; background:var(--cyan); border-radius:1px; opacity:0.85;}
 
-// ---------- WIN/LOSE ----------
-function renderWL(){
-  const maxWin = Math.max(...DATA.winners.map(w=>w.count));
-  const maxLose = Math.max(...DATA.losers.map(w=>w.count));
-  const winRows = DATA.winners.map(w=>`
-    <div class="wl-row">
-      <span class="wl-name">${w.name}</span>
-      <div class="wl-track"><div class="wl-fill" style="width:${(w.count/maxWin)*100}%; background:var(--green);"></div></div>
-      <span class="wl-count">${w.count}</span>
-    </div>`).join('');
-  const loseRows = DATA.losers.map(w=>`
-    <div class="wl-row">
-      <span class="wl-name">${w.name}</span>
-      <div class="wl-track"><div class="wl-fill" style="width:${(w.count/maxLose)*100}%; background:var(--pink);"></div></div>
-      <span class="wl-count">${w.count}</span>
-    </div>`).join('');
-  document.getElementById('panel-wl').innerHTML = `
-    <div class="card">
-      <h2>Kolikrát kdo vyhrál / prohrál kolo</h2>
-      <p class="sub">Počet kol, ve kterých byl daný manažer nejlepší, respektive nejhorší z miniligy.</p>
-      <div class="records-grid">
-        <div><h3 style="font-size:14px;color:var(--green);margin:0 0 12px;">Výhry kola</h3><div class="wl-bars">${winRows}</div></div>
-        <div><h3 style="font-size:14px;color:var(--pink);margin:0 0 12px;">Prohry kola</h3><div class="wl-bars">${loseRows}</div></div>
-      </div>
-    </div>`;
-}
-renderWL();
+  /* ---------- CHIP PILLS ---------- */
+  .chips-cell{white-space:nowrap;}
+  .chip-pill{
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:600; padding:3px 8px; border-radius:999px;
+    margin-right:4px; border:1px solid var(--line); color:var(--text-mute);
+  }
+  .chip-pill:last-child{margin-right:0;}
+  .chip-pill.used{border-color:transparent;}
+  .chip-wc.used{background:var(--cyan); color:#042C53;}
+  .chip-fh.used{background:var(--gold); color:#412402;}
+  .chip-bb.used{background:var(--green); color:#173404;}
+  .chip-tc.used{background:var(--pink); color:#4B1528;}
+
+  /* ---------- CHART ---------- */
+  .chart-wrap{position:relative; height:360px;}
+  .legend-pills{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;}
+  .pill{
+    font-size:12px; padding:5px 10px; border-radius:999px; border:1px solid var(--line);
+    color:var(--text-dim); cursor:pointer; user-select:none; font-weight:500;
+  }
+  .pill.on{color:var(--purple-900); font-weight:700;}
+
+  /* ---------- RECORDS ---------- */
+  .records-grid{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
+  @media(max-width:720px){.records-grid{grid-template-columns:1fr;}}
+  .rec-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:9px 0; border-bottom:1px solid var(--line); font-size:14px;
+  }
+  .rec-row:last-child{border-bottom:none;}
+  .rec-rank{color:var(--text-mute); width:22px; font-variant-numeric:tabular-nums; font-size:13px;}
+  .rec-name{flex:1; font-weight:600; padding:0 8px;}
+  .rec-meta{color:var(--text-mute); font-size:12px; margin-right:10px;}
+  .rec-pts{font-weight:700; font-variant-numeric:tabular-nums;}
+  .rec-pts.good{color:var(--green);}
+  .rec-pts.bad{color:var(--pink);}
+
+  /* ---------- MOTM ---------- */
+  .motm-list{display:flex; flex-direction:column; gap:10px;}
+  .motm-row{
+    display:grid; grid-template-columns:90px 1fr 1fr 1fr; gap:10px; align-items:center;
+    padding:10px 12px; background:rgba(0,0,0,0.14); border-radius:10px; font-size:13px;
+  }
+  @media(max-width:640px){.motm-row{grid-template-columns:70px 1fr; grid-template-rows:auto auto auto;}}
+  .motm-month{color:var(--text-mute); font-weight:600; font-size:12px;}
+  .medal{display:flex; align-items:center; gap:8px;}
+  .medal-dot{width:9px; height:9px; border-radius:50%; flex-shrink:0;}
+  .medal-name{font-weight:600;}
+  .medal-pts{color:var(--text-mute); font-size:12px;}
+
+  /* ---------- WIN/LOSE ---------- */
+  .wl-bars{display:flex; flex-direction:column; gap:10px;}
+  .wl-row{display:grid; grid-template-columns:120px 1fr 34px; gap:10px; align-items:center; font-size:13px;}
+  .wl-name{font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .wl-track{background:rgba(0,0,0,0.25); border-radius:6px; height:14px; overflow:hidden;}
+  .wl-fill{height:100%; border-radius:6px;}
+  .wl-count{text-align:right; font-variant-numeric:tabular-nums; color:var(--text-dim);}
+
+  footer{color:var(--text-mute); font-size:12px; text-align:center; margin-top:40px;}
+  footer a{color:var(--text-dim);}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script type="application/json" id="fpl-data">
+{"league_name": "FPL okresu Benešov", "season": "2026/27", "generated_at": "2026-09-04T22:32:19Z", "gw_labels": ["GW 01", "GW 02", "GW 03", "GW 04", "GW 05", "GW 06", "GW 07", "GW 08", "GW 09", "GW 10", "GW 11", "GW 12", "GW 13", "GW 14", "GW 15", "GW 16", "GW 17", "GW 18", "GW 19", "GW 20", "GW 21", "GW 22", "GW 23", "GW 24", "GW 25", "GW 26", "GW 27", "GW 28", "GW 29", "GW 30", "GW 31", "GW 32", "GW 33", "GW 34", "GW 35", "GW 36", "GW 37", "GW 38"], "gw_months": ["August", "August", "September", "September", "September", "October", "October", "October", "October", "November", "November", "November", "December", "December", "December", "December", "December", "December", "January", "January", "January", "January", "January", "February", "February", "February", "February", "March", "March", "March", "April", "April", "April", "May", "May", "May", "May", "May"], "players": [{"name": "Martin Šípek", "total": 184.0, "transfer_cost": 0, "avg": 61.3, "form5": 184.0, "sd": 43.6, "consistency": 28.8, "max": 98.0, "min": 0.0, "half1": 184.0, "half2": 0, "gws": [98.0, 86.0, 0.0, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], "rank": 1, "chips": {"WC": null, "FH": null, "BB": 1, "TC": null}}, {"name": "Josef Mokráň", "total": 175.0, "transfer_cost": 0, "avg": 58.3, "form5": 175.0, "sd": 43.7, "consistency": 25.2, "max": 105.0, "min": 0.0, "half1": 175.0, "half2": 0, "gws": [70.0, 105.0, 0.0, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], "rank": 2, "chips": {"WC": null, "FH": null, "BB": 1, "TC": 3}}, {"name": "Tomáš Kreps", "total": 173.0, "transfer_cost": 0, "avg": 57.7, "form5": 173.0, "sd": 44.7, "consistency": 22.4, "max": 109.0, "min": 0.0, "half1": 173.0, "half2": 0, "gws": [64.0, 109.0, 0.0, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], "rank": 3, "chips": {"WC": null, "FH": null, "BB": 1, "TC": 3}}, {"name": "Miroslav Pádivý", "total": 170.0, "transfer_cost": 0, "avg": 56.7, "form5": 170.0, "sd": 43.3, "consistency": 23.6, "max": 105.0, "min": 0.0, "half1": 170.0, "half2": 0, "gws": [65.0, 105.0, 0.0, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], "rank": 4, "chips": {"WC": null, "FH": null, "BB": null, "TC": null}}, {"name": "Milan Pádivý", "total": 167.0, "transfer_cost": 0, "avg": 55.7, "form5": 167.0, "sd": 32.6, "consistency": 41.5, "max": 92.0, "min": 13.0, "half1": 167.0, "half2": 0, "gws": [62.0, 92.0, 13.0, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], "rank": 5, "chips": {"WC": null, "FH": null, "BB": null, "TC": null}}, {"name": "Martin Vácha", "total": 164.0, "transfer_cost": 0, "avg": 54.7, "form5": 164.0, "sd": 43.3, "consistency": 20.8, "max": 109.0, "min": 3.0, "half1": 164.0, "half2": 0, "gws": [52.0, 109.0, 3.0, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], "rank": 6, "chips": {"WC": null, "FH": null, "BB": null, "TC": 3}}, {"name": "Miroslav Paňák", "total": 158.0, "transfer_cost": 0, "avg": 52.7, "form5": 158.0, "sd": 52.3, "consistency": 0.7, "max": 124.0, "min": 0.0, "half1": 158.0, "half2": 0, "gws": [34.0, 124.0, 0.0, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], "rank": 7, "chips": {"WC": null, "FH": null, "BB": null, "TC": null}}, {"name": "Tomáš Čedík", "total": 147.0, "transfer_cost": 0, "avg": 49.0, "form5": 147.0, "sd": 27.9, "consistency": 43.1, "max": 81.0, "min": 13.0, "half1": 147.0, "half2": 0, "gws": [53.0, 81.0, 13.0, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], "rank": 8, "chips": {"WC": null, "FH": null, "BB": null, "TC": null}}, {"name": "Denis Dvořák", "total": 146.0, "transfer_cost": 0, "avg": 48.7, "form5": 146.0, "sd": 32.5, "consistency": 33.2, "max": 76.0, "min": 3.0, "half1": 146.0, "half2": 0, "gws": [76.0, 67.0, 3.0, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], "rank": 9, "chips": {"WC": null, "FH": null, "BB": null, "TC": 3}}, {"name": "Lukas Čedík", "total": 113.0, "transfer_cost": 0, "avg": 37.7, "form5": 113.0, "sd": 31.5, "consistency": 16.5, "max": 77.0, "min": 0.0, "half1": 113.0, "half2": 0, "gws": [36.0, 77.0, 0.0, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], "rank": 10, "chips": {"WC": null, "FH": null, "BB": null, "TC": null}}, {"name": "Milan Procházka", "total": 106.0, "transfer_cost": 0, "avg": 35.3, "form5": 106.0, "sd": 23.9, "consistency": 32.4, "max": 60.0, "min": 3.0, "half1": 106.0, "half2": 0, "gws": [43.0, 60.0, 3.0, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null], "rank": 11, "chips": {"WC": null, "FH": null, "BB": null, "TC": null}}], "best": [{"points": 124.0, "name": "Miroslav Paňák", "gw": "GW 02", "transfers": 0, "rank": 1}, {"points": 109.0, "name": "Tomáš Kreps", "gw": "GW 02", "transfers": 0, "rank": 2}, {"points": 109.0, "name": "Martin Vácha", "gw": "GW 02", "transfers": 0, "rank": 2}, {"points": 105.0, "name": "Josef Mokráň", "gw": "GW 02", "transfers": 0, "rank": 4}, {"points": 105.0, "name": "Miroslav Pádivý", "gw": "GW 02", "transfers": 0, "rank": 4}, {"points": 98.0, "name": "Martin Šípek", "gw": "GW 01", "transfers": 0, "rank": 6}, {"points": 92.0, "name": "Milan Pádivý", "gw": "GW 02", "transfers": 0, "rank": 7}, {"points": 86.0, "name": "Martin Šípek", "gw": "GW 02", "transfers": 1, "rank": 8}, {"points": 81.0, "name": "Tomáš Čedík", "gw": "GW 02", "transfers": 0, "rank": 9}, {"points": 77.0, "name": "Lukas Čedík", "gw": "GW 02", "transfers": 1, "rank": 10}, {"points": 76.0, "name": "Denis Dvořák", "gw": "GW 01", "transfers": 0, "rank": 11}, {"points": 70.0, "name": "Josef Mokráň", "gw": "GW 01", "transfers": 0, "rank": 12}, {"points": 67.0, "name": "Denis Dvořák", "gw": "GW 02", "transfers": 0, "rank": 13}, {"points": 65.0, "name": "Miroslav Pádivý", "gw": "GW 01", "transfers": 0, "rank": 14}, {"points": 64.0, "name": "Tomáš Kreps", "gw": "GW 01", "transfers": 0, "rank": 15}], "worst": [{"points": 0.0, "name": "Martin Šípek", "gw": "GW 03", "transfers": 0, "rank": 1}, {"points": 0.0, "name": "Josef Mokráň", "gw": "GW 03", "transfers": 2, "rank": 1}, {"points": 0.0, "name": "Tomáš Kreps", "gw": "GW 03", "transfers": 1, "rank": 1}, {"points": 0.0, "name": "Miroslav Pádivý", "gw": "GW 03", "transfers": 0, "rank": 1}, {"points": 0.0, "name": "Miroslav Paňák", "gw": "GW 03", "transfers": 0, "rank": 1}, {"points": 0.0, "name": "Lukas Čedík", "gw": "GW 03", "transfers": 1, "rank": 1}, {"points": 3.0, "name": "Martin Vácha", "gw": "GW 03", "transfers": 2, "rank": 7}, {"points": 3.0, "name": "Denis Dvořák", "gw": "GW 03", "transfers": 2, "rank": 7}, {"points": 3.0, "name": "Milan Procházka", "gw": "GW 03", "transfers": 0, "rank": 7}, {"points": 13.0, "name": "Milan Pádivý", "gw": "GW 03", "transfers": 1, "rank": 10}, {"points": 13.0, "name": "Tomáš Čedík", "gw": "GW 03", "transfers": 0, "rank": 10}, {"points": 34.0, "name": "Miroslav Paňák", "gw": "GW 01", "transfers": 0, "rank": 12}, {"points": 36.0, "name": "Lukas Čedík", "gw": "GW 01", "transfers": 0, "rank": 13}, {"points": 43.0, "name": "Milan Procházka", "gw": "GW 01", "transfers": 0, "rank": 14}, {"points": 52.0, "name": "Martin Vácha", "gw": "GW 01", "transfers": 0, "rank": 15}], "motm": [{"month": "August", "gold": {"name": "Martin Šípek", "points": 184.0}, "silver": {"name": "Josef Mokráň", "points": 175.0}, "bronze": {"name": "Tomáš Kreps", "points": 173.0}}, {"month": "September", "gold": {"name": "Milan Pádivý", "points": 13.0}, "silver": {"name": "Tomáš Čedík", "points": 13.0}, "bronze": {"name": "Martin Vácha", "points": 3.0}}], "winners": [{"rank": 1, "name": "Martin Šípek", "count": 1}, {"rank": 1, "name": "Miroslav Paňák", "count": 1}, {"rank": 1, "name": "Milan Pádivý", "count": 1}, {"rank": 1, "name": "Tomáš Čedík", "count": 1}], "losers": [{"rank": 1, "name": "Miroslav Paňák", "count": 2}, {"rank": 2, "name": "Milan Procházka", "count": 1}, {"rank": 2, "name": "Martin Šípek", "count": 1}, {"rank": 2, "name": "Josef Mokráň", "count": 1}, {"rank": 2, "name": "Tomáš Kreps", "count": 1}, {"rank": 2, "name": "Miroslav Pádivý", "count": 1}, {"rank": 2, "name": "Lukas Čedík", "count": 1}]}
+</script>
+
+<script>
+const DATA = JSON.parse(document.getElementById('fpl-data').textContent);
+</script>
+<script src="dashboard.js"></script>
+</body>
+</html>
