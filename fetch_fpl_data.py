@@ -153,6 +153,7 @@ def build_dataset() -> dict:
                     "name": name,
                     "gw": gw_labels[idx],
                     "transfers": gw.get("event_transfers", 0),
+                    "closed": gw_data_checked[idx],
                 }
             )
             month = gw_months[idx]
@@ -174,7 +175,7 @@ def build_dataset() -> dict:
                 "name": name,
                 "total": total,
                 "transfer_cost": transfer_cost_total,
-                "avg": round(avg_finished, 1) if avg_finished is not None else None,
+                "avg": round(avg_finished) if avg_finished is not None else None,
                 "form5": sum(played[-5:]) if played else 0,
                 "sd": round(statistics.pstdev(played), 1) if len(played) > 1 else 0,
                 # Konzistence = 100 * (1 - SD / průměr) — vyšší % = stabilnější výkony.
@@ -223,7 +224,9 @@ def build_dataset() -> dict:
         if rk <= RECORD_RANK_CUTOFF
     ]
 
-    worst_sorted = sorted(all_gw_records, key=lambda r: r["points"])
+    worst_sorted = sorted(
+        (r for r in all_gw_records if r["closed"]), key=lambda r: r["points"]
+    )
     worst_ranks = competition_ranks([-r["points"] for r in worst_sorted])
     worst = [
         {**r, "rank": rk}
@@ -233,8 +236,8 @@ def build_dataset() -> dict:
 
     winners_count: dict[str, int] = {}
     losers_count: dict[str, int] = {}
-    for scores in per_gw_scores.values():
-        if not scores:
+    for gw_num, scores in per_gw_scores.items():
+        if not scores or not gw_data_checked[gw_num - 1]:
             continue
         max_pts = max(pts for _, pts in scores)
         min_pts = min(pts for _, pts in scores)
