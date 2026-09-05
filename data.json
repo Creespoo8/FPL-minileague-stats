@@ -1,7 +1,7 @@
 {
   "league_name": "FPL okresu Benešov",
   "season": "2026/27",
-  "generated_at": "2026-09-05T13:00:06Z",
+  "generated_at": "2026-09-05T18:44:57Z",
   "current_gw": 3,
   "current_gw_finished": false,
   "current_gw_data_checked": false,
@@ -878,6 +878,150 @@
       "transfers": 0,
       "closed": true,
       "rank": 15
+    },
+    {
+      "points": 62.0,
+      "name": "Milan Pádivý",
+      "gw": "GW 01",
+      "transfers": 0,
+      "closed": true,
+      "rank": 16
+    },
+    {
+      "points": 60.0,
+      "name": "Milan Procházka",
+      "gw": "GW 02",
+      "transfers": 0,
+      "closed": true,
+      "rank": 17
+    },
+    {
+      "points": 53.0,
+      "name": "Tomáš Čedík",
+      "gw": "GW 01",
+      "transfers": 0,
+      "closed": true,
+      "rank": 18
+    },
+    {
+      "points": 52.0,
+      "name": "Martin Vácha",
+      "gw": "GW 01",
+      "transfers": 0,
+      "closed": true,
+      "rank": 19
+    },
+    {
+      "points": 43.0,
+      "name": "Milan Procházka",
+      "gw": "GW 01",
+      "transfers": 0,
+      "closed": true,
+      "rank": 20
+    },
+    {
+      "points": 36.0,
+      "name": "Lukas Čedík",
+      "gw": "GW 01",
+      "transfers": 0,
+      "closed": true,
+      "rank": 21
+    },
+    {
+      "points": 34.0,
+      "name": "Miroslav Paňák",
+      "gw": "GW 01",
+      "transfers": 0,
+      "closed": true,
+      "rank": 22
+    },
+    {
+      "points": 13.0,
+      "name": "Milan Pádivý",
+      "gw": "GW 03",
+      "transfers": 1,
+      "closed": false,
+      "rank": 23
+    },
+    {
+      "points": 13.0,
+      "name": "Tomáš Čedík",
+      "gw": "GW 03",
+      "transfers": 0,
+      "closed": false,
+      "rank": 23
+    },
+    {
+      "points": 3.0,
+      "name": "Martin Šípek",
+      "gw": "GW 03",
+      "transfers": 0,
+      "closed": false,
+      "rank": 25
+    },
+    {
+      "points": 3.0,
+      "name": "Martin Vácha",
+      "gw": "GW 03",
+      "transfers": 2,
+      "closed": false,
+      "rank": 25
+    },
+    {
+      "points": 3.0,
+      "name": "Denis Dvořák",
+      "gw": "GW 03",
+      "transfers": 2,
+      "closed": false,
+      "rank": 25
+    },
+    {
+      "points": 3.0,
+      "name": "Milan Procházka",
+      "gw": "GW 03",
+      "transfers": 0,
+      "closed": false,
+      "rank": 25
+    },
+    {
+      "points": 0.0,
+      "name": "Josef Mokráň",
+      "gw": "GW 03",
+      "transfers": 2,
+      "closed": false,
+      "rank": 29
+    },
+    {
+      "points": 0.0,
+      "name": "Tomáš Kreps",
+      "gw": "GW 03",
+      "transfers": 1,
+      "closed": false,
+      "rank": 29
+    },
+    {
+      "points": 0.0,
+      "name": "Miroslav Pádivý",
+      "gw": "GW 03",
+      "transfers": 0,
+      "closed": false,
+      "rank": 29
+    },
+    {
+      "points": 0.0,
+      "name": "Miroslav Paňák",
+      "gw": "GW 03",
+      "transfers": 0,
+      "closed": false,
+      "rank": 29
+    },
+    {
+      "points": 0.0,
+      "name": "Lukas Čedík",
+      "gw": "GW 03",
+      "transfers": 1,
+      "closed": false,
+      "rank": 29
     }
   ],
   "worst": [
@@ -1000,6 +1144,62 @@
       "transfers": 1,
       "closed": true,
       "rank": 15
+    },
+    {
+      "points": 92.0,
+      "name": "Milan Pádivý",
+      "gw": "GW 02",
+      "transfers": 0,
+      "closed": true,
+      "rank": 16
+    },
+    {
+      "points": 98.0,
+      "name": "Martin Šípek",
+      "gw": "GW 01",
+      "transfers": 0,
+      "closed": true,
+      "rank": 17
+    },
+    {
+      "points": 105.0,
+      "name": "Josef Mokráň",
+      "gw": "GW 02",
+      "transfers": 0,
+      "closed": true,
+      "rank": 18
+    },
+    {
+      "points": 105.0,
+      "name": "Miroslav Pádivý",
+      "gw": "GW 02",
+      "transfers": 0,
+      "closed": true,
+      "rank": 18
+    },
+    {
+      "points": 109.0,
+      "name": "Tomáš Kreps",
+      "gw": "GW 02",
+      "transfers": 0,
+      "closed": true,
+      "rank": 20
+    },
+    {
+      "points": 109.0,
+      "name": "Martin Vácha",
+      "gw": "GW 02",
+      "transfers": 0,
+      "closed": true,
+      "rank": 20
+    },
+    {
+      "points": 124.0,
+      "name": "Miroslav Paňák",
+      "gw": "GW 02",
+      "transfers": 0,
+      "closed": true,
+      "rank": 22
     }
   ],
   "motm": [
