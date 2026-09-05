@@ -58,11 +58,11 @@ const heroHTML = `
   </div>
   <nav id="nav"></nav>
   <section class="panel" id="panel-table"></section>
+  <section class="panel" id="panel-gw"></section>
   <section class="panel" id="panel-chart"></section>
   <section class="panel" id="panel-records"></section>
   <section class="panel" id="panel-motm"></section>
   <section class="panel" id="panel-wl"></section>
-  <section class="panel" id="panel-gw"></section>
   <footer>Data z FPL API${DATA.generated_at ? ' · aktualizováno ' + DATA.generated_at.replace('T',' ').replace('Z',' UTC') : ''} · ${DATA.gw_labels[0]}–${DATA.gw_labels[DATA.gw_labels.length-1]}</footer>
 `;
 app.innerHTML = heroHTML;
@@ -70,11 +70,11 @@ app.innerHTML = heroHTML;
 // ---------- NAV ----------
 const tabs = [
   {id:'table', label:'Tabulka'},
+  {id:'gw', label:'GW'},
   {id:'chart', label:'Vývoj v kolech'},
   {id:'records', label:'Rekordy'},
   {id:'motm', label:'Manažer měsíce'},
   {id:'wl', label:'Výhry & prohry kola'},
-  {id:'gw', label:'GW'},
 ];
 const nav = document.getElementById('nav');
 nav.innerHTML = tabs.map((t,i)=>`<button data-tab="${t.id}" class="${i===0?'active':''}">${t.label}</button>`).join('');
@@ -448,26 +448,58 @@ function renderGwMatrix(){
     colMax.push(vals.length ? Math.max(...vals) : null);
     colMin.push(vals.length ? Math.min(...vals) : null);
   }
-  const thead = DATA.gw_labels.map((label,i)=>
-    `<th class="num${i+1===DATA.current_gw && !DATA.current_gw_data_checked?' live-col':''}">${label.replace('GW ','GW')}</th>`
+  // Stejné úvodní sloupce jako v hlavní tabulce, ať se dá z jednoho pohledu na kola
+  // rovnou vidět i celkový kontext (pořadí, body, formu...).
+  const leadCols = [
+    {k:'rank', label:'#'},
+    {k:'name', label:'Manažer'},
+    {k:'total', label:'Body'},
+    {k:'current_gw_points', label:`GW ${DATA.current_gw ?? ''}`},
+    {k:'transfer_cost', label:'Hits'},
+    {k:'avg', label:'Průměr'},
+    {k:'form5', label:'Forma (5)'},
+    {k:'max', label:'Max'},
+    {k:'min', label:'Min'},
+    {k:'consistency', label:'Konzistence'},
+  ];
+  const leadThead = leadCols.map(c=>{
+    if(c.k==='rank') return `<th class="sticky-rank">${c.label}</th>`;
+    if(c.k==='name') return `<th class="sticky-col">${c.label}</th>`;
+    return `<th class="num">${c.label}</th>`;
+  }).join('') + `<th>Chipy</th>`;
+  const gwThead = DATA.gw_labels.map((label,i)=>
+    `<th class="num${i===0?' col-divider':''}${i+1===DATA.current_gw && !DATA.current_gw_data_checked?' live-col':''}">${label.replace('GW ','GW')}</th>`
   ).join('');
   const tbody = rows.map(p=>{
-    const cells = p.gws.map((v,i)=>{
-      if(v===null||v===undefined) return `<td class="num">—</td>`;
-      let cls = 'num';
+    const leadCells = `
+      <td class="rank sticky-rank">${p.rank}</td>
+      <td class="player sticky-col">${p.name}</td>
+      <td class="num total">${p.total}</td>
+      <td class="num">${p.current_gw_points===null||p.current_gw_points===undefined?'—':p.current_gw_points}</td>
+      <td class="num">${p.transfer_cost}</td>
+      <td class="num">${p.avg===null||p.avg===undefined?'—':p.avg}</td>
+      <td class="num">${p.form5}</td>
+      <td class="num">${p.max}</td>
+      <td class="num">${p.min===null||p.min===undefined?'—':p.min}</td>
+      <td class="num">${p.consistency===null||p.consistency===undefined?'—':fmt1(p.consistency)+'\u00a0%'}</td>
+      <td class="chips-cell">${CHIP_ORDER.map(code=>chipPill(code,(p.chips||{})[code])).join('')}</td>`;
+    const gwCells = p.gws.map((v,i)=>{
+      const divider = i===0 ? ' col-divider' : '';
+      if(v===null||v===undefined) return `<td class="num${divider}">—</td>`;
+      let cls = 'num'+divider;
       if(v===colMax[i]) cls += ' good';
       else if(v===colMin[i]) cls += ' bad';
       return `<td class="${cls}">${v}</td>`;
     }).join('');
-    return `<tr><td class="player sticky-col">${p.name}</td>${cells}</tr>`;
+    return `<tr>${leadCells}${gwCells}</tr>`;
   }).join('');
   document.getElementById('panel-gw').innerHTML = `
     <div class="card">
       <h2>Matice kol</h2>
-      <p class="sub">Body každého manažera v každém kole. Zeleně nejlepší, růžově nejhorší výsledek daného kola. ${DATA.current_gw_data_checked?'':'Poslední sloupec (aktuální kolo) je zatím živý a může se ještě měnit.'}</p>
+      <p class="sub">Body každého manažera v každém kole, seřazeno podle aktuální tabulky. Zeleně nejlepší, růžově nejhorší výsledek daného kola. ${DATA.current_gw_data_checked?'':'Poslední kolo je zatím živé a může se ještě měnit.'}</p>
       <div class="table-scroll">
         <table class="gw-matrix">
-          <thead><tr><th class="sticky-col">Manažer</th>${thead}</tr></thead>
+          <thead><tr>${leadThead}${gwThead}</tr></thead>
           <tbody>${tbody}</tbody>
         </table>
       </div>
