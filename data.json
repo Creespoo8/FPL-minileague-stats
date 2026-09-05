@@ -1,7 +1,7 @@
 {
   "league_name": "FPL okresu Benešov",
   "season": "2026/27",
-  "generated_at": "2026-09-05T19:48:12Z",
+  "generated_at": "2026-09-05T22:31:53Z",
   "current_gw": 3,
   "current_gw_finished": false,
   "current_gw_data_checked": false,
@@ -698,21 +698,21 @@
     },
     {
       "name": "Lukas Čedík",
-      "total": 139.0,
+      "total": 140.0,
       "transfer_cost": 0,
       "avg": 56,
-      "form5": 139.0,
-      "sd": 22.1,
+      "form5": 140.0,
+      "sd": 21.8,
       "consistency": 63.7,
       "max": 77.0,
       "min": 36.0,
-      "current_gw_points": 26.0,
-      "half1": 139.0,
+      "current_gw_points": 27.0,
+      "half1": 140.0,
       "half2": 0,
       "gws": [
         36.0,
         77.0,
-        26.0,
+        27.0,
         null,
         null,
         null,
@@ -1016,12 +1016,12 @@
       "rank": 32
     },
     {
-      "points": 26.0,
+      "points": 27.0,
       "name": "Lukas Čedík",
       "gw": "GW 03",
       "transfers": 1,
       "closed": false,
-      "rank": 33
+      "rank": 32
     }
   ],
   "worst": [
