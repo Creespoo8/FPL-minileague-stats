@@ -29,7 +29,11 @@ const heroHTML = `
     <div class="hero-left">
       <p class="eyebrow">${DATA.league_name}</p>
       <h1>Sezónní přehled ${DATA.season || ''}</h1>
-      <p>Statistiky ${DATA.players.length} manažerů napříč ${DATA.gw_labels.length} koly — body, forma, rekordy a měsíční vítězové na jednom místě.</p>
+      <p class="gw-status">Kolo ${DATA.current_gw ?? '—'}
+        <span class="status-pill ${DATA.current_gw_data_checked ? 'status-done' : 'status-live'}">
+          ${DATA.current_gw_data_checked ? 'dokončeno' : 'probíhá'}
+        </span>
+      </p>
     </div>
     <div class="leader-card">
       <div class="label">Vede sezónu</div>
@@ -85,15 +89,21 @@ function renderTable(){
     {k:'rank', label:'#'},
     {k:'name', label:'Manažer'},
     {k:'total', label:'Body'},
-    {k:'transfer_cost', label:'Body za přestupy'},
+    {k:'current_gw_points', label:`GW ${DATA.current_gw ?? ''}`},
+    {k:'transfer_cost', label:'Hits'},
     {k:'avg', label:'Průměr/kolo'},
     {k:'form5', label:'Forma (5)'},
     {k:'max', label:'Max'},
     {k:'min', label:'Min'},
     {k:'consistency', label:'Konzistence'},
   ];
+  const colTitles = {
+    consistency: '100% × (1 − odchylka bodů / vlastní průměr), počítáno jen z dokončených kol — vyšší % = stabilnější výkony',
+    min: 'Nejhorší výsledek z dokončených kol (rozehrané kolo se nepočítá, dokud FPL nedopočítá bonusy)',
+    current_gw_points: DATA.current_gw_data_checked ? 'Body v posledním odehraném kole' : 'Průběžné body v rozehraném kole — ještě se mohou měnit (bonusy, hráči co ještě nehráli)',
+  };
   const thead = cols.map(c=>{
-    const title = c.k==='consistency' ? ' title="100% × (1 − odchylka bodů / vlastní průměr) — vyšší % = stabilnější výkony"' : '';
+    const title = colTitles[c.k] ? ` title="${colTitles[c.k]}"` : '';
     const arrow = sortKey===c.k ? (sortDir===1?' ▼':' ▲') : '';
     return `<th class="${c.k==='name'?'':'num'}" data-key="${c.k}"${title}>${c.label}${arrow}</th>`;
   }).join('') + `<th title="Chipy zahrané v aktuální polovině sezóny">Chipy</th>`;
@@ -107,11 +117,12 @@ function renderTable(){
       <td class="rank">${p.rank}</td>
       <td class="player">${p.name}</td>
       <td class="num total">${p.total}</td>
+      <td class="num">${p.current_gw_points===null||p.current_gw_points===undefined?'—':p.current_gw_points}</td>
       <td class="num">${p.transfer_cost}</td>
       <td class="num">${fmt1(p.avg)}</td>
       <td class="num">${p.form5}</td>
       <td class="num">${p.max}</td>
-      <td class="num">${p.min}</td>
+      <td class="num">${p.min===null||p.min===undefined?'—':p.min}</td>
       <td class="num">${p.consistency===null||p.consistency===undefined?'—':fmt1(p.consistency)+'\u00a0%'}</td>
       <td class="chips-cell">${chipCells}</td>
     </tr>`;
