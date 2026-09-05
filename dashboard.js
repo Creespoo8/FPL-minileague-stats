@@ -106,7 +106,7 @@ function renderTable(){
     {k:'total', label:'Body'},
     {k:'current_gw_points', label:`GW ${DATA.current_gw ?? ''}`},
     {k:'transfer_cost', label:'Hits'},
-    {k:'avg', label:'Průměr/kolo'},
+    {k:'avg', label:'Průměr'},
     {k:'form5', label:'Forma (5)'},
     {k:'max', label:'Max'},
     {k:'min', label:'Min'},
@@ -134,7 +134,7 @@ function renderTable(){
       <td class="num total">${p.total}</td>
       <td class="num">${p.current_gw_points===null||p.current_gw_points===undefined?'—':p.current_gw_points}</td>
       <td class="num">${p.transfer_cost}</td>
-      <td class="num">${fmt1(p.avg)}</td>
+      <td class="num">${p.avg===null||p.avg===undefined?'—':p.avg}</td>
       <td class="num">${p.form5}</td>
       <td class="num">${p.max}</td>
       <td class="num">${p.min===null||p.min===undefined?'—':p.min}</td>
