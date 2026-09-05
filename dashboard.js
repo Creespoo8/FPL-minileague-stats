@@ -24,21 +24,36 @@ document.title = `${DATA.league_name} — FPL Minileague`;
 
 // ---------- HERO ----------
 const leader = [...DATA.players].sort((a,b)=>b.total-a.total)[0];
+const bestForm = [...DATA.players].sort((a,b)=>b.form5-a.form5)[0];
+const motmCard = DATA.last_closed_month;
+const seasonShort = DATA.season ? DATA.season.slice(2) : '';
 const heroHTML = `
   <div class="hero">
     <div class="hero-left">
       <p class="eyebrow">${DATA.league_name}</p>
-      <h1>Sezónní přehled ${DATA.season || ''}</h1>
-      <p class="gw-status">Kolo ${DATA.current_gw ?? '—'}
+      <h1>Season ${seasonShort}</h1>
+      <p class="gw-status">Gameweek ${DATA.current_gw ?? '—'}
         <span class="status-pill ${DATA.current_gw_data_checked ? 'status-done' : 'status-live'}">
           ${DATA.current_gw_data_checked ? 'dokončeno' : 'probíhá'}
         </span>
       </p>
     </div>
-    <div class="leader-card">
-      <div class="label">Vede sezónu</div>
-      <div class="name">${leader.name}</div>
-      <div class="points">${leader.total}<span>bodů</span></div>
+    <div class="hero-cards">
+      <div class="leader-card">
+        <div class="label">Vede sezónu</div>
+        <div class="name">${leader.name}</div>
+        <div class="points">${leader.total}<span>bodů</span></div>
+      </div>
+      <div class="leader-card">
+        <div class="label">Manažer měsíce${motmCard ? ' · ' + monthCz[motmCard.month] : ''}</div>
+        <div class="name">${motmCard ? motmCard.gold.name : '—'}</div>
+        <div class="points">${motmCard ? motmCard.gold.points : '—'}<span>${motmCard ? 'bodů' : ''}</span></div>
+      </div>
+      <div class="leader-card">
+        <div class="label">Nejlepší forma (5)</div>
+        <div class="name">${bestForm.name}</div>
+        <div class="points">${bestForm.form5}<span>bodů</span></div>
+      </div>
     </div>
   </div>
   <nav id="nav"></nav>
