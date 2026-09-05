@@ -343,28 +343,49 @@ function drawChart(){
 // ---------- RECORDS ----------
 function renderRecords(){
   const bestRows = DATA.best.map(r=>`
-    <div class="rec-row">
+    <div class="rec-row" data-name="${r.name}">
       <span class="rec-rank">${r.rank}.</span>
       <span class="rec-name">${r.name}</span>
       <span class="rec-meta">${r.gw}</span>
       <span class="rec-pts good">${r.points}</span>
     </div>`).join('');
   const worstRows = DATA.worst.map(r=>`
-    <div class="rec-row">
+    <div class="rec-row" data-name="${r.name}">
       <span class="rec-rank">${r.rank}.</span>
       <span class="rec-name">${r.name}</span>
       <span class="rec-meta">${r.gw}</span>
       <span class="rec-pts bad">${r.points}</span>
     </div>`).join('');
+  const managerChips = [...DATA.players]
+    .sort((a,b)=>a.rank-b.rank)
+    .map(p=>`<button class="mgr-chip" type="button" data-name="${p.name}">${p.name}</button>`)
+    .join('');
   document.getElementById('panel-records').innerHTML = `
     <div class="card">
       <h2>Nejlepší a nejhorší výkony v kole</h2>
-      <p class="sub">TOP záznamy napříč celou sezónou, bez ohledu na to, kdo je zrovna nahoře v tabulce.</p>
+      <p class="sub">TOP záznamy napříč celou sezónou, bez ohledu na to, kdo je zrovna nahoře v tabulce. Klikni na manažera a zvýrazní se v obou žebříčcích.</p>
+      <div class="manager-filter">${managerChips}</div>
       <div class="records-grid">
         <div><h3 style="font-size:14px;color:var(--green);margin:0 0 8px;">Nejlepší kola</h3>${bestRows}</div>
         <div><h3 style="font-size:14px;color:var(--pink);margin:0 0 8px;">Nejhorší kola</h3>${worstRows}</div>
       </div>
     </div>`;
+
+  const panel = document.getElementById('panel-records');
+  panel.querySelectorAll('.mgr-chip').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const name = btn.dataset.name;
+      const wasActive = btn.classList.contains('active');
+      panel.querySelectorAll('.mgr-chip').forEach(b=>b.classList.remove('active'));
+      panel.querySelectorAll('.rec-row').forEach(r=>r.classList.remove('highlight','dim'));
+      if(!wasActive){
+        btn.classList.add('active');
+        panel.querySelectorAll('.rec-row').forEach(r=>{
+          r.classList.add(r.dataset.name===name ? 'highlight' : 'dim');
+        });
+      }
+    });
+  });
 }
 renderRecords();
 
