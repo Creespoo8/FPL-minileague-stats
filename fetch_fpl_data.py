@@ -67,6 +67,14 @@ def fetch_entry_history(entry_id: int) -> dict:
     return fetch_json(f"{API_BASE}/entry/{entry_id}/history/")
 
 
+def fetch_entry_picks(entry_id: int, event_id: int) -> dict:
+    """The 'my team' / picks endpoint for one gameweek. Unlike /history/, FPL
+    updates this one live during matches (it's what fpl.com itself shows on
+    your Points page mid-gameweek), so we use it just for the round that's
+    currently in progress."""
+    return fetch_json(f"{API_BASE}/entry/{entry_id}/event/{event_id}/picks/")
+
+
 def build_gw_labels_and_months(
     events: list[dict],
 ) -> tuple[list[str], list[str | None], list[bool]]:
@@ -160,6 +168,50 @@ def build_dataset() -> dict:
             if month:
                 monthly_totals.setdefault(month, {})
                 monthly_totals[month][name] = monthly_totals[month].get(name, 0) + points
+
+        # /history/ neaktualizuje rozehrané kolo živě (FPL ho tam doplní až po
+        # zpracování). Pro AKTUÁLNÍ rozehrané kolo proto přepíšeme skóre živou
+        # hodnotou z picks endpointu, který FPL aktualizuje v průběhu zápasů.
+        if cur_gw_num and not cur_gw_data_checked:
+            idx = cur_gw_num - 1
+            try:
+                live = fetch_entry_picks(entry_id, cur_gw_num)
+            except Exception as exc:
+                print(f"  ! živé skóre pro {name} (GW{cur_gw_num}) se nepodařilo načíst: {exc}", file=sys.stderr)
+                live = None
+            live_hist = (live or {}).get("entry_history") or {}
+            live_points = live_hist.get("points")
+            if live_points is not None:
+                old_points = gws[idx]
+                old_cost = next(
+                    (g.get("event_transfers_cost", 0) for g in history["current"] if g["event"] == cur_gw_num),
+                    0,
+                )
+                if old_points is not None:
+                    transfer_cost_total -= old_cost
+                    per_gw_scores[cur_gw_num] = [t for t in per_gw_scores[cur_gw_num] if t[0] != name]
+                    all_gw_records[:] = [
+                        r for r in all_gw_records if not (r["name"] == name and r["gw"] == gw_labels[idx])
+                    ]
+                    month = gw_months[idx]
+                    if month:
+                        monthly_totals[month][name] = monthly_totals[month].get(name, 0) - old_points
+                gws[idx] = float(live_points)
+                transfer_cost_total += live_hist.get("event_transfers_cost", 0)
+                per_gw_scores[cur_gw_num].append((name, gws[idx]))
+                all_gw_records.append(
+                    {
+                        "points": gws[idx],
+                        "name": name,
+                        "gw": gw_labels[idx],
+                        "transfers": live_hist.get("event_transfers", 0),
+                        "closed": gw_data_checked[idx],
+                    }
+                )
+                month = gw_months[idx]
+                if month:
+                    monthly_totals.setdefault(month, {})
+                    monthly_totals[month][name] = monthly_totals[month].get(name, 0) + gws[idx]
 
         played = [v for v in gws if v is not None]
         # Min a Konzistence smí čerpat jen z kol, která FPL už definitivně uzavřelo
