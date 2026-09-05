@@ -68,11 +68,18 @@ def fetch_entry_history(entry_id: int) -> dict:
 
 
 def fetch_entry_picks(entry_id: int, event_id: int) -> dict:
-    """The 'my team' / picks endpoint for one gameweek. Unlike /history/, FPL
-    updates this one live during matches (it's what fpl.com itself shows on
-    your Points page mid-gameweek), so we use it just for the round that's
-    currently in progress."""
+    """A manager's squad + transfer cost for one gameweek. The 'points' field
+    inside this response is NOT live during play (same lag as /history/) —
+    we only use this for the picks list (element ids + multipliers) and the
+    transfer cost, then compute the live score ourselves from /live/."""
     return fetch_json(f"{API_BASE}/entry/{entry_id}/event/{event_id}/picks/")
+
+
+def fetch_live_event(event_id: int) -> dict:
+    """Per-player live stats (goals, bonus, total_points so far) for one
+    gameweek — this endpoint IS updated in near real-time during matches,
+    same source FPL's own site uses to show live scores mid-gameweek."""
+    return fetch_json(f"{API_BASE}/event/{event_id}/live/")
 
 
 def build_gw_labels_and_months(
@@ -134,6 +141,18 @@ def build_dataset() -> dict:
 
     league_name, standings = fetch_league_standings(LEAGUE_ID)
 
+    # Jedno sdílené stažení živých hráčských bodů pro rozehrané kolo (ne pro
+    # každého manažera zvlášť) — použije se níž k dopočtu živého skóre.
+    live_points_by_element: dict[int, float] = {}
+    if cur_gw_num and not cur_gw_data_checked:
+        try:
+            live_event = fetch_live_event(cur_gw_num)
+            live_points_by_element = {
+                el["id"]: el["stats"]["total_points"] for el in live_event.get("elements", [])
+            }
+        except Exception as exc:
+            print(f"  ! živá data pro GW{cur_gw_num} se nepodařilo načíst: {exc}", file=sys.stderr)
+
     players = []
     all_gw_records = []  # each finished gw score across all managers
     per_gw_scores: dict[int, list[tuple[str, float]]] = {i: [] for i in range(1, num_gw + 1)}
@@ -170,18 +189,26 @@ def build_dataset() -> dict:
                 monthly_totals[month][name] = monthly_totals[month].get(name, 0) + points
 
         # /history/ neaktualizuje rozehrané kolo živě (FPL ho tam doplní až po
-        # zpracování). Pro AKTUÁLNÍ rozehrané kolo proto přepíšeme skóre živou
-        # hodnotou z picks endpointu, který FPL aktualizuje v průběhu zápasů.
-        if cur_gw_num and not cur_gw_data_checked:
+        # zpracování) a ani "points" v picks endpointu není za běhu kola spolehlivé.
+        # Pro AKTUÁLNÍ rozehrané kolo si proto skóre spočítáme sami: vezmeme sestavu
+        # (picks) a k ní přičteme živé body hráčů z /event/{gw}/live/, se stejným
+        # násobičem jako u kapitána/trojnásobku/bench boostu.
+        if cur_gw_num and live_points_by_element:
             idx = cur_gw_num - 1
             try:
-                live = fetch_entry_picks(entry_id, cur_gw_num)
+                picks_data = fetch_entry_picks(entry_id, cur_gw_num)
             except Exception as exc:
-                print(f"  ! živé skóre pro {name} (GW{cur_gw_num}) se nepodařilo načíst: {exc}", file=sys.stderr)
-                live = None
-            live_hist = (live or {}).get("entry_history") or {}
-            live_points = live_hist.get("points")
-            if live_points is not None:
+                print(f"  ! sestava pro {name} (GW{cur_gw_num}) se nepodařila načíst: {exc}", file=sys.stderr)
+                picks_data = None
+            if picks_data:
+                live_gross = sum(
+                    live_points_by_element.get(pick["element"], 0) * pick.get("multiplier", 0)
+                    for pick in picks_data.get("picks", [])
+                )
+                live_cost = picks_data.get("entry_history", {}).get("event_transfers_cost", 0)
+                live_transfers = picks_data.get("entry_history", {}).get("event_transfers", 0)
+                live_score = live_gross - live_cost
+
                 old_points = gws[idx]
                 old_cost = next(
                     (g.get("event_transfers_cost", 0) for g in history["current"] if g["event"] == cur_gw_num),
@@ -196,15 +223,15 @@ def build_dataset() -> dict:
                     month = gw_months[idx]
                     if month:
                         monthly_totals[month][name] = monthly_totals[month].get(name, 0) - old_points
-                gws[idx] = float(live_points)
-                transfer_cost_total += live_hist.get("event_transfers_cost", 0)
+                gws[idx] = float(live_score)
+                transfer_cost_total += live_cost
                 per_gw_scores[cur_gw_num].append((name, gws[idx]))
                 all_gw_records.append(
                     {
                         "points": gws[idx],
                         "name": name,
                         "gw": gw_labels[idx],
-                        "transfers": live_hist.get("event_transfers", 0),
+                        "transfers": live_transfers,
                         "closed": gw_data_checked[idx],
                     }
                 )
