@@ -462,7 +462,7 @@ function renderGwMatrix(){
     return `<th class="num">${c.label}</th>`;
   }).join('');
   const gwThead = DATA.gw_labels.map((label,i)=>
-    `<th class="num${i===0?' col-divider':''}${i+1===DATA.current_gw && !DATA.current_gw_data_checked?' live-col':''}">${label.replace('GW ','GW')}</th>`
+    `<th class="num${i+1===DATA.current_gw && !DATA.current_gw_data_checked?' live-col':''}"${i+1===DATA.current_gw?' id="gw-col-current"':''}>${label.replace('GW ','GW')}</th>`
   ).join('');
   const tbody = rows.map(p=>{
     const leadCells = `
@@ -470,9 +470,8 @@ function renderGwMatrix(){
       <td class="player sticky-col">${p.name}</td>
       <td class="num total sticky-total">${p.total}</td>`;
     const gwCells = p.gws.map((v,i)=>{
-      const divider = i===0 ? ' col-divider' : '';
-      if(v===null||v===undefined) return `<td class="num${divider}">—</td>`;
-      let cls = 'num'+divider;
+      if(v===null||v===undefined) return `<td class="num">—</td>`;
+      let cls = 'num';
       if(v===colMax[i]) cls += ' good';
       else if(v===colMin[i]) cls += ' bad';
       return `<td class="${cls}">${v}</td>`;
@@ -495,7 +494,14 @@ function renderGwMatrix(){
 function scrollGwToCurrent(){
   const scroller = document.querySelector('#panel-gw .table-scroll');
   if(!scroller) return;
-  // Odscroluje úplně doprava, ať je hned vidět aktuální kolo a co nejvíc historie před ním.
-  scroller.scrollLeft = scroller.scrollWidth - scroller.clientWidth;
+  const currentCol = document.getElementById('gw-col-current');
+  if(currentCol){
+    // Pravý okraj aktuálního kola zarovnat s pravým okrajem viditelné oblasti —
+    // u prvních kol sezóny to samo vyjde na úplně vlevo (Math.max ošetří zápor).
+    const desired = currentCol.offsetLeft + currentCol.offsetWidth - scroller.clientWidth;
+    scroller.scrollLeft = Math.max(0, desired);
+  } else {
+    scroller.scrollLeft = scroller.scrollWidth - scroller.clientWidth;
+  }
 }
 renderGwMatrix();
