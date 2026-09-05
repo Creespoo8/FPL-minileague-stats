@@ -62,6 +62,7 @@ const heroHTML = `
   <section class="panel" id="panel-records"></section>
   <section class="panel" id="panel-motm"></section>
   <section class="panel" id="panel-wl"></section>
+  <section class="panel" id="panel-gw"></section>
   <footer>Data z FPL API${DATA.generated_at ? ' · aktualizováno ' + DATA.generated_at.replace('T',' ').replace('Z',' UTC') : ''} · ${DATA.gw_labels[0]}–${DATA.gw_labels[DATA.gw_labels.length-1]}</footer>
 `;
 app.innerHTML = heroHTML;
@@ -73,6 +74,7 @@ const tabs = [
   {id:'records', label:'Rekordy'},
   {id:'motm', label:'Manažer měsíce'},
   {id:'wl', label:'Výhry & prohry kola'},
+  {id:'gw', label:'GW'},
 ];
 const nav = document.getElementById('nav');
 nav.innerHTML = tabs.map((t,i)=>`<button data-tab="${t.id}" class="${i===0?'active':''}">${t.label}</button>`).join('');
@@ -434,3 +436,41 @@ function renderWL(){
     </div>`;
 }
 renderWL();
+
+// ---------- GW MATRIX ----------
+function renderGwMatrix(){
+  const rows = [...DATA.players].sort((a,b)=>a.rank-b.rank);
+  const numGw = DATA.gw_labels.length;
+  // Nejvyšší/nejnižší skóre v každém kole (napříč všemi manažery), ať jde vidět na první pohled.
+  const colMax = [], colMin = [];
+  for(let i=0;i<numGw;i++){
+    const vals = rows.map(p=>p.gws[i]).filter(v=>v!==null && v!==undefined);
+    colMax.push(vals.length ? Math.max(...vals) : null);
+    colMin.push(vals.length ? Math.min(...vals) : null);
+  }
+  const thead = DATA.gw_labels.map((label,i)=>
+    `<th class="num${i+1===DATA.current_gw && !DATA.current_gw_data_checked?' live-col':''}">${label.replace('GW ','GW')}</th>`
+  ).join('');
+  const tbody = rows.map(p=>{
+    const cells = p.gws.map((v,i)=>{
+      if(v===null||v===undefined) return `<td class="num">—</td>`;
+      let cls = 'num';
+      if(v===colMax[i]) cls += ' good';
+      else if(v===colMin[i]) cls += ' bad';
+      return `<td class="${cls}">${v}</td>`;
+    }).join('');
+    return `<tr><td class="player sticky-col">${p.name}</td>${cells}</tr>`;
+  }).join('');
+  document.getElementById('panel-gw').innerHTML = `
+    <div class="card">
+      <h2>Matice kol</h2>
+      <p class="sub">Body každého manažera v každém kole. Zeleně nejlepší, růžově nejhorší výsledek daného kola. ${DATA.current_gw_data_checked?'':'Poslední sloupec (aktuální kolo) je zatím živý a může se ještě měnit.'}</p>
+      <div class="table-scroll">
+        <table class="gw-matrix">
+          <thead><tr><th class="sticky-col">Manažer</th>${thead}</tr></thead>
+          <tbody>${tbody}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+renderGwMatrix();
