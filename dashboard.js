@@ -86,6 +86,7 @@ nav.addEventListener('click', (e)=>{
   document.querySelectorAll('section.panel').forEach(s=>s.classList.remove('active'));
   document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
   if(btn.dataset.tab==='chart' && !chartDrawn) drawChart();
+  if(btn.dataset.tab==='gw') requestAnimationFrame(scrollGwToCurrent);
 });
 document.getElementById('panel-table').classList.add('active');
 
@@ -457,6 +458,7 @@ function renderGwMatrix(){
   const leadThead = leadCols.map(c=>{
     if(c.k==='rank') return `<th class="sticky-rank">${c.label}</th>`;
     if(c.k==='name') return `<th class="sticky-col">${c.label}</th>`;
+    if(c.k==='total') return `<th class="num sticky-total">${c.label}</th>`;
     return `<th class="num">${c.label}</th>`;
   }).join('');
   const gwThead = DATA.gw_labels.map((label,i)=>
@@ -466,7 +468,7 @@ function renderGwMatrix(){
     const leadCells = `
       <td class="rank sticky-rank">${p.rank}</td>
       <td class="player sticky-col">${p.name}</td>
-      <td class="num total">${p.total}</td>`;
+      <td class="num total sticky-total">${p.total}</td>`;
     const gwCells = p.gws.map((v,i)=>{
       const divider = i===0 ? ' col-divider' : '';
       if(v===null||v===undefined) return `<td class="num${divider}">—</td>`;
@@ -488,5 +490,12 @@ function renderGwMatrix(){
         </table>
       </div>
     </div>`;
+  scrollGwToCurrent();
+}
+function scrollGwToCurrent(){
+  const scroller = document.querySelector('#panel-gw .table-scroll');
+  if(!scroller) return;
+  // Odscroluje úplně doprava, ať je hned vidět aktuální kolo a co nejvíc historie před ním.
+  scroller.scrollLeft = scroller.scrollWidth - scroller.clientWidth;
 }
 renderGwMatrix();
