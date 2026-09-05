@@ -448,25 +448,17 @@ function renderGwMatrix(){
     colMax.push(vals.length ? Math.max(...vals) : null);
     colMin.push(vals.length ? Math.min(...vals) : null);
   }
-  // Stejné úvodní sloupce jako v hlavní tabulce, ať se dá z jednoho pohledu na kola
-  // rovnou vidět i celkový kontext (pořadí, body, formu...).
+  // Stejné úvodní sloupce jako v hlavní tabulce, ale jen ty základní — pořadí, jméno, body.
   const leadCols = [
     {k:'rank', label:'#'},
     {k:'name', label:'Manažer'},
     {k:'total', label:'Body'},
-    {k:'current_gw_points', label:`GW ${DATA.current_gw ?? ''}`},
-    {k:'transfer_cost', label:'Hits'},
-    {k:'avg', label:'Průměr'},
-    {k:'form5', label:'Forma (5)'},
-    {k:'max', label:'Max'},
-    {k:'min', label:'Min'},
-    {k:'consistency', label:'Konzistence'},
   ];
   const leadThead = leadCols.map(c=>{
     if(c.k==='rank') return `<th class="sticky-rank">${c.label}</th>`;
     if(c.k==='name') return `<th class="sticky-col">${c.label}</th>`;
     return `<th class="num">${c.label}</th>`;
-  }).join('') + `<th>Chipy</th>`;
+  }).join('');
   const gwThead = DATA.gw_labels.map((label,i)=>
     `<th class="num${i===0?' col-divider':''}${i+1===DATA.current_gw && !DATA.current_gw_data_checked?' live-col':''}">${label.replace('GW ','GW')}</th>`
   ).join('');
@@ -474,15 +466,7 @@ function renderGwMatrix(){
     const leadCells = `
       <td class="rank sticky-rank">${p.rank}</td>
       <td class="player sticky-col">${p.name}</td>
-      <td class="num total">${p.total}</td>
-      <td class="num">${p.current_gw_points===null||p.current_gw_points===undefined?'—':p.current_gw_points}</td>
-      <td class="num">${p.transfer_cost}</td>
-      <td class="num">${p.avg===null||p.avg===undefined?'—':p.avg}</td>
-      <td class="num">${p.form5}</td>
-      <td class="num">${p.max}</td>
-      <td class="num">${p.min===null||p.min===undefined?'—':p.min}</td>
-      <td class="num">${p.consistency===null||p.consistency===undefined?'—':fmt1(p.consistency)+'\u00a0%'}</td>
-      <td class="chips-cell">${CHIP_ORDER.map(code=>chipPill(code,(p.chips||{})[code])).join('')}</td>`;
+      <td class="num total">${p.total}</td>`;
     const gwCells = p.gws.map((v,i)=>{
       const divider = i===0 ? ' col-divider' : '';
       if(v===null||v===undefined) return `<td class="num${divider}">—</td>`;
