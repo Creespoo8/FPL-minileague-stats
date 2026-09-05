@@ -259,10 +259,17 @@ def build_dataset() -> dict:
             seen_months.append(m)
 
     motm = []
+    last_closed_month = None
     for month in seen_months:
         totals = monthly_totals.get(month, {})
         if not totals:
             continue
+        # Měsíc je "uzavřený" jen když FPL definitivně potvrdilo VŠECHNA jeho kola —
+        # jinak by "manažer měsíce" mohl ukazovat někoho, kdo zatím jen vede díky
+        # tomu, že mu rozehrané kolo doteď přičetlo víc živých bodů než ostatním.
+        month_closed = all(
+            gw_data_checked[i] for i, m in enumerate(gw_months) if m == month
+        )
         ranked = sorted(totals.items(), key=lambda kv: kv[1], reverse=True)[:3]
         while len(ranked) < 3:
             ranked.append(("—", 0))
@@ -270,11 +277,14 @@ def build_dataset() -> dict:
         motm.append(
             {
                 "month": month,
+                "closed": month_closed,
                 "gold": {"name": gold[0], "points": gold[1]},
                 "silver": {"name": silver[0], "points": silver[1]},
                 "bronze": {"name": bronze[0], "points": bronze[1]},
             }
         )
+        if month_closed:
+            last_closed_month = motm[-1]
 
     return {
         "league_name": league_name,
@@ -289,6 +299,7 @@ def build_dataset() -> dict:
         "best": best,
         "worst": worst,
         "motm": motm,
+        "last_closed_month": last_closed_month,
         "winners": winners,
         "losers": losers,
     }
