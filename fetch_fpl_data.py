@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parent
 DATA_JSON_PATH = ROOT / "data.json"
 DASHBOARD_HTML_PATH = ROOT / "dashboard.html"
 
-RECORD_RANK_CUTOFF = 15  # how many distinct point-tiers to keep in best/worst lists
+RECORD_RANK_CUTOFF = 50  # how many distinct point-tiers to keep in best/worst lists
 REQUEST_TIMEOUT = 30
 HEADERS = {"User-Agent": "fpl-minileague-stats/1.0 (+github actions data sync)"}
 
