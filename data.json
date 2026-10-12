@@ -1,7 +1,7 @@
 {
   "league_name": "FPL okresu Benešov",
   "season": "2026/27",
-  "generated_at": "2026-10-11T01:05:02Z",
+  "generated_at": "2026-10-12T01:26:25Z",
   "current_gw": 6,
   "current_gw_finished": false,
   "current_gw_data_checked": false,
@@ -88,16 +88,16 @@
   "players": [
     {
       "name": "Josef Mokráň",
-      "total": 461.0,
+      "total": 483.0,
       "transfer_cost": 0,
       "avg": 78,
-      "form5": 391.0,
-      "sd": 21.2,
+      "form5": 413.0,
+      "sd": 21.6,
       "consistency": 70.6,
       "max": 106.0,
       "min": 53.0,
-      "current_gw_points": 70.0,
-      "half1": 461.0,
+      "current_gw_points": 92.0,
+      "half1": 483.0,
       "half2": 0,
       "gws": [
         70.0,
@@ -105,7 +105,7 @@
         57.0,
         106.0,
         53.0,
-        70.0,
+        92.0,
         null,
         null,
         null,
@@ -148,25 +148,25 @@
       }
     },
     {
-      "name": "Tomáš Kreps",
-      "total": 436.0,
+      "name": "Martin Šípek",
+      "total": 450.0,
       "transfer_cost": 0,
-      "avg": 73,
-      "form5": 372.0,
-      "sd": 19.0,
-      "consistency": 71.4,
-      "max": 109.0,
-      "min": 52.0,
-      "current_gw_points": 71.0,
-      "half1": 436.0,
+      "avg": 75,
+      "form5": 352.0,
+      "sd": 18.9,
+      "consistency": 72.4,
+      "max": 98.0,
+      "min": 42.0,
+      "current_gw_points": 76.0,
+      "half1": 450.0,
       "half2": 0,
       "gws": [
-        64.0,
-        109.0,
-        52.0,
-        83.0,
-        57.0,
-        71.0,
+        98.0,
+        86.0,
+        60.0,
+        88.0,
+        42.0,
+        76.0,
         null,
         null,
         null,
@@ -205,29 +205,29 @@
         "WC": 6,
         "FH": null,
         "BB": 1,
-        "TC": 3
+        "TC": null
       }
     },
     {
-      "name": "Martin Šípek",
-      "total": 435.0,
+      "name": "Tomáš Kreps",
+      "total": 450.0,
       "transfer_cost": 0,
-      "avg": 75,
-      "form5": 337.0,
-      "sd": 19.5,
-      "consistency": 72.4,
-      "max": 98.0,
-      "min": 42.0,
-      "current_gw_points": 61.0,
-      "half1": 435.0,
+      "avg": 73,
+      "form5": 386.0,
+      "sd": 19.6,
+      "consistency": 71.4,
+      "max": 109.0,
+      "min": 52.0,
+      "current_gw_points": 85.0,
+      "half1": 450.0,
       "half2": 0,
       "gws": [
-        98.0,
-        86.0,
-        60.0,
-        88.0,
-        42.0,
-        61.0,
+        64.0,
+        109.0,
+        52.0,
+        83.0,
+        57.0,
+        85.0,
         null,
         null,
         null,
@@ -266,21 +266,21 @@
         "WC": 6,
         "FH": null,
         "BB": 1,
-        "TC": null
+        "TC": 3
       }
     },
     {
       "name": "Miroslav Pádivý",
-      "total": 425.0,
+      "total": 435.0,
       "transfer_cost": 0,
       "avg": 72,
-      "form5": 360.0,
+      "form5": 370.0,
       "sd": 22.1,
       "consistency": 66.3,
       "max": 105.0,
       "min": 43.0,
-      "current_gw_points": 67.0,
-      "half1": 425.0,
+      "current_gw_points": 77.0,
+      "half1": 435.0,
       "half2": 0,
       "gws": [
         65.0,
@@ -288,7 +288,7 @@
         51.0,
         94.0,
         43.0,
-        67.0,
+        77.0,
         null,
         null,
         null,
@@ -332,16 +332,16 @@
     },
     {
       "name": "Martin Vácha",
-      "total": 415.0,
+      "total": 431.0,
       "transfer_cost": 0,
       "avg": 72,
-      "form5": 363.0,
-      "sd": 24.6,
+      "form5": 379.0,
+      "sd": 23.5,
       "consistency": 64.5,
       "max": 109.0,
       "min": 48.0,
-      "current_gw_points": 53.0,
-      "half1": 415.0,
+      "current_gw_points": 69.0,
+      "half1": 431.0,
       "half2": 0,
       "gws": [
         52.0,
@@ -349,7 +349,7 @@
         55.0,
         98.0,
         48.0,
-        53.0,
+        69.0,
         null,
         null,
         null,
@@ -393,16 +393,16 @@
     },
     {
       "name": "Miroslav Paňák",
-      "total": 390.0,
+      "total": 396.0,
       "transfer_cost": 0,
       "avg": 70,
-      "form5": 356.0,
-      "sd": 30.8,
+      "form5": 362.0,
+      "sd": 30.1,
       "consistency": 55.4,
       "max": 124.0,
       "min": 34.0,
-      "current_gw_points": 39.0,
-      "half1": 390.0,
+      "current_gw_points": 45.0,
+      "half1": 396.0,
       "half2": 0,
       "gws": [
         34.0,
@@ -410,7 +410,7 @@
         56.0,
         84.0,
         53.0,
-        39.0,
+        45.0,
         null,
         null,
         null,
@@ -454,16 +454,16 @@
     },
     {
       "name": "Denis Dvořák",
-      "total": 372.0,
+      "total": 384.0,
       "transfer_cost": 0,
       "avg": 66,
-      "form5": 296.0,
-      "sd": 11.8,
+      "form5": 308.0,
+      "sd": 8.9,
       "consistency": 87.3,
       "max": 76.0,
       "min": 51.0,
-      "current_gw_points": 42.0,
-      "half1": 372.0,
+      "current_gw_points": 54.0,
+      "half1": 384.0,
       "half2": 0,
       "gws": [
         76.0,
@@ -471,7 +471,7 @@
         71.0,
         65.0,
         51.0,
-        42.0,
+        54.0,
         null,
         null,
         null,
@@ -514,25 +514,25 @@
       }
     },
     {
-      "name": "Milan Pádivý",
-      "total": 336.0,
+      "name": "Milan Procházka",
+      "total": 350.0,
       "transfer_cost": 0,
-      "avg": 57,
-      "form5": 274.0,
-      "sd": 18.5,
-      "consistency": 65.1,
-      "max": 92.0,
-      "min": 31.0,
-      "current_gw_points": 49.0,
-      "half1": 336.0,
+      "avg": 59,
+      "form5": 307.0,
+      "sd": 8.7,
+      "consistency": 84.4,
+      "max": 71.0,
+      "min": 43.0,
+      "current_gw_points": 54.0,
+      "half1": 350.0,
       "half2": 0,
       "gws": [
-        62.0,
-        92.0,
-        49.0,
-        53.0,
-        31.0,
-        49.0,
+        43.0,
+        60.0,
+        64.0,
+        71.0,
+        58.0,
+        54.0,
         null,
         null,
         null,
@@ -568,32 +568,32 @@
       ],
       "rank": 8,
       "chips": {
-        "WC": 6,
+        "WC": null,
         "FH": null,
         "BB": null,
-        "TC": 4
+        "TC": null
       }
     },
     {
-      "name": "Milan Procházka",
-      "total": 328.0,
+      "name": "Milan Pádivý",
+      "total": 339.0,
       "transfer_cost": 0,
-      "avg": 59,
-      "form5": 285.0,
-      "sd": 13.2,
-      "consistency": 84.4,
-      "max": 71.0,
-      "min": 43.0,
-      "current_gw_points": 32.0,
-      "half1": 328.0,
+      "avg": 57,
+      "form5": 277.0,
+      "sd": 18.4,
+      "consistency": 65.1,
+      "max": 92.0,
+      "min": 31.0,
+      "current_gw_points": 52.0,
+      "half1": 339.0,
       "half2": 0,
       "gws": [
-        43.0,
-        60.0,
-        64.0,
-        71.0,
-        58.0,
-        32.0,
+        62.0,
+        92.0,
+        49.0,
+        53.0,
+        31.0,
+        52.0,
         null,
         null,
         null,
@@ -629,32 +629,32 @@
       ],
       "rank": 9,
       "chips": {
-        "WC": null,
+        "WC": 6,
         "FH": null,
         "BB": null,
-        "TC": null
+        "TC": 4
       }
     },
     {
-      "name": "Tomáš Čedík",
-      "total": 318.0,
+      "name": "Lukas Čedík",
+      "total": 328.0,
       "transfer_cost": 0,
-      "avg": 55,
-      "form5": 265.0,
-      "sd": 14.3,
-      "consistency": 72.6,
-      "max": 81.0,
-      "min": 38.0,
-      "current_gw_points": 44.0,
-      "half1": 318.0,
+      "avg": 53,
+      "form5": 292.0,
+      "sd": 17.3,
+      "consistency": 65.0,
+      "max": 77.0,
+      "min": 36.0,
+      "current_gw_points": 63.0,
+      "half1": 328.0,
       "half2": 0,
       "gws": [
-        53.0,
-        81.0,
-        59.0,
-        38.0,
-        43.0,
-        44.0,
+        36.0,
+        77.0,
+        42.0,
+        74.0,
+        36.0,
+        63.0,
         null,
         null,
         null,
@@ -697,25 +697,25 @@
       }
     },
     {
-      "name": "Lukas Čedík",
-      "total": 317.0,
+      "name": "Tomáš Čedík",
+      "total": 327.0,
       "transfer_cost": 0,
-      "avg": 53,
-      "form5": 281.0,
-      "sd": 16.9,
-      "consistency": 65.0,
-      "max": 77.0,
-      "min": 36.0,
-      "current_gw_points": 52.0,
-      "half1": 317.0,
+      "avg": 55,
+      "form5": 274.0,
+      "sd": 13.7,
+      "consistency": 72.6,
+      "max": 81.0,
+      "min": 38.0,
+      "current_gw_points": 53.0,
+      "half1": 327.0,
       "half2": 0,
       "gws": [
-        36.0,
-        77.0,
-        42.0,
-        74.0,
-        36.0,
-        52.0,
+        53.0,
+        81.0,
+        59.0,
+        38.0,
+        43.0,
+        53.0,
         null,
         null,
         null,
@@ -833,6 +833,14 @@
     },
     {
       "points": 92.0,
+      "name": "Josef Mokráň",
+      "gw": "GW 06",
+      "transfers": 0,
+      "closed": false,
+      "rank": 10
+    },
+    {
+      "points": 92.0,
       "name": "Milan Pádivý",
       "gw": "GW 02",
       "transfers": 0,
@@ -845,7 +853,7 @@
       "gw": "GW 04",
       "transfers": 2,
       "closed": true,
-      "rank": 11
+      "rank": 12
     },
     {
       "points": 86.0,
@@ -853,7 +861,15 @@
       "gw": "GW 02",
       "transfers": 1,
       "closed": true,
-      "rank": 12
+      "rank": 13
+    },
+    {
+      "points": 85.0,
+      "name": "Tomáš Kreps",
+      "gw": "GW 06",
+      "transfers": 0,
+      "closed": false,
+      "rank": 14
     },
     {
       "points": 84.0,
@@ -861,7 +877,7 @@
       "gw": "GW 04",
       "transfers": 0,
       "closed": true,
-      "rank": 13
+      "rank": 15
     },
     {
       "points": 83.0,
@@ -869,7 +885,7 @@
       "gw": "GW 04",
       "transfers": 2,
       "closed": true,
-      "rank": 14
+      "rank": 16
     },
     {
       "points": 81.0,
@@ -877,7 +893,15 @@
       "gw": "GW 02",
       "transfers": 0,
       "closed": true,
-      "rank": 15
+      "rank": 17
+    },
+    {
+      "points": 77.0,
+      "name": "Miroslav Pádivý",
+      "gw": "GW 06",
+      "transfers": 2,
+      "closed": false,
+      "rank": 18
     },
     {
       "points": 77.0,
@@ -885,7 +909,15 @@
       "gw": "GW 02",
       "transfers": 1,
       "closed": true,
-      "rank": 16
+      "rank": 18
+    },
+    {
+      "points": 76.0,
+      "name": "Martin Šípek",
+      "gw": "GW 06",
+      "transfers": 0,
+      "closed": false,
+      "rank": 20
     },
     {
       "points": 76.0,
@@ -893,7 +925,7 @@
       "gw": "GW 01",
       "transfers": 0,
       "closed": true,
-      "rank": 17
+      "rank": 20
     },
     {
       "points": 74.0,
@@ -901,15 +933,7 @@
       "gw": "GW 04",
       "transfers": 1,
       "closed": true,
-      "rank": 18
-    },
-    {
-      "points": 71.0,
-      "name": "Tomáš Kreps",
-      "gw": "GW 06",
-      "transfers": 0,
-      "closed": false,
-      "rank": 19
+      "rank": 22
     },
     {
       "points": 71.0,
@@ -917,7 +941,7 @@
       "gw": "GW 03",
       "transfers": 2,
       "closed": true,
-      "rank": 19
+      "rank": 23
     },
     {
       "points": 71.0,
@@ -925,7 +949,7 @@
       "gw": "GW 04",
       "transfers": 2,
       "closed": true,
-      "rank": 19
+      "rank": 23
     },
     {
       "points": 70.0,
@@ -933,23 +957,15 @@
       "gw": "GW 01",
       "transfers": 0,
       "closed": true,
-      "rank": 22
+      "rank": 25
     },
     {
-      "points": 70.0,
-      "name": "Josef Mokráň",
+      "points": 69.0,
+      "name": "Martin Vácha",
       "gw": "GW 06",
       "transfers": 0,
       "closed": false,
-      "rank": 22
-    },
-    {
-      "points": 67.0,
-      "name": "Miroslav Pádivý",
-      "gw": "GW 06",
-      "transfers": 2,
-      "closed": false,
-      "rank": 24
+      "rank": 26
     },
     {
       "points": 67.0,
@@ -957,7 +973,7 @@
       "gw": "GW 02",
       "transfers": 0,
       "closed": true,
-      "rank": 24
+      "rank": 27
     },
     {
       "points": 65.0,
@@ -965,7 +981,7 @@
       "gw": "GW 01",
       "transfers": 0,
       "closed": true,
-      "rank": 26
+      "rank": 28
     },
     {
       "points": 65.0,
@@ -973,7 +989,7 @@
       "gw": "GW 04",
       "transfers": 0,
       "closed": true,
-      "rank": 26
+      "rank": 28
     },
     {
       "points": 64.0,
@@ -981,7 +997,7 @@
       "gw": "GW 01",
       "transfers": 0,
       "closed": true,
-      "rank": 28
+      "rank": 30
     },
     {
       "points": 64.0,
@@ -989,7 +1005,15 @@
       "gw": "GW 03",
       "transfers": 0,
       "closed": true,
-      "rank": 28
+      "rank": 30
+    },
+    {
+      "points": 63.0,
+      "name": "Lukas Čedík",
+      "gw": "GW 06",
+      "transfers": 0,
+      "closed": false,
+      "rank": 32
     },
     {
       "points": 62.0,
@@ -997,15 +1021,7 @@
       "gw": "GW 01",
       "transfers": 0,
       "closed": true,
-      "rank": 30
-    },
-    {
-      "points": 61.0,
-      "name": "Martin Šípek",
-      "gw": "GW 06",
-      "transfers": 0,
-      "closed": false,
-      "rank": 31
+      "rank": 33
     },
     {
       "points": 60.0,
@@ -1013,7 +1029,7 @@
       "gw": "GW 03",
       "transfers": 0,
       "closed": true,
-      "rank": 32
+      "rank": 34
     },
     {
       "points": 60.0,
@@ -1021,7 +1037,7 @@
       "gw": "GW 02",
       "transfers": 0,
       "closed": true,
-      "rank": 32
+      "rank": 34
     },
     {
       "points": 59.0,
@@ -1029,7 +1045,7 @@
       "gw": "GW 03",
       "transfers": 0,
       "closed": true,
-      "rank": 34
+      "rank": 36
     },
     {
       "points": 58.0,
@@ -1037,7 +1053,7 @@
       "gw": "GW 05",
       "transfers": 0,
       "closed": true,
-      "rank": 35
+      "rank": 37
     },
     {
       "points": 57.0,
@@ -1045,7 +1061,7 @@
       "gw": "GW 03",
       "transfers": 2,
       "closed": true,
-      "rank": 36
+      "rank": 38
     },
     {
       "points": 57.0,
@@ -1053,7 +1069,7 @@
       "gw": "GW 05",
       "transfers": 0,
       "closed": true,
-      "rank": 36
+      "rank": 38
     },
     {
       "points": 56.0,
@@ -1061,7 +1077,7 @@
       "gw": "GW 03",
       "transfers": 0,
       "closed": true,
-      "rank": 38
+      "rank": 40
     },
     {
       "points": 55.0,
@@ -1069,7 +1085,23 @@
       "gw": "GW 03",
       "transfers": 2,
       "closed": true,
-      "rank": 39
+      "rank": 41
+    },
+    {
+      "points": 54.0,
+      "name": "Denis Dvořák",
+      "gw": "GW 06",
+      "transfers": 1,
+      "closed": false,
+      "rank": 42
+    },
+    {
+      "points": 54.0,
+      "name": "Milan Procházka",
+      "gw": "GW 06",
+      "transfers": 0,
+      "closed": false,
+      "rank": 42
     },
     {
       "points": 53.0,
@@ -1077,15 +1109,7 @@
       "gw": "GW 05",
       "transfers": 0,
       "closed": true,
-      "rank": 40
-    },
-    {
-      "points": 53.0,
-      "name": "Martin Vácha",
-      "gw": "GW 06",
-      "transfers": 0,
-      "closed": false,
-      "rank": 40
+      "rank": 44
     },
     {
       "points": 53.0,
@@ -1093,7 +1117,7 @@
       "gw": "GW 05",
       "transfers": 0,
       "closed": true,
-      "rank": 40
+      "rank": 44
     },
     {
       "points": 53.0,
@@ -1101,7 +1125,7 @@
       "gw": "GW 04",
       "transfers": 2,
       "closed": true,
-      "rank": 40
+      "rank": 44
     },
     {
       "points": 53.0,
@@ -1109,7 +1133,15 @@
       "gw": "GW 01",
       "transfers": 0,
       "closed": true,
-      "rank": 40
+      "rank": 44
+    },
+    {
+      "points": 53.0,
+      "name": "Tomáš Čedík",
+      "gw": "GW 06",
+      "transfers": 0,
+      "closed": false,
+      "rank": 44
     },
     {
       "points": 52.0,
@@ -1117,7 +1149,7 @@
       "gw": "GW 03",
       "transfers": 1,
       "closed": true,
-      "rank": 45
+      "rank": 49
     },
     {
       "points": 52.0,
@@ -1125,47 +1157,15 @@
       "gw": "GW 01",
       "transfers": 0,
       "closed": true,
-      "rank": 45
+      "rank": 49
     },
     {
       "points": 52.0,
-      "name": "Lukas Čedík",
-      "gw": "GW 06",
-      "transfers": 0,
-      "closed": false,
-      "rank": 45
-    },
-    {
-      "points": 51.0,
-      "name": "Miroslav Pádivý",
-      "gw": "GW 03",
-      "transfers": 0,
-      "closed": true,
-      "rank": 48
-    },
-    {
-      "points": 51.0,
-      "name": "Denis Dvořák",
-      "gw": "GW 05",
-      "transfers": 2,
-      "closed": true,
-      "rank": 48
-    },
-    {
-      "points": 49.0,
-      "name": "Milan Pádivý",
-      "gw": "GW 03",
-      "transfers": 1,
-      "closed": true,
-      "rank": 50
-    },
-    {
-      "points": 49.0,
       "name": "Milan Pádivý",
       "gw": "GW 06",
       "transfers": 0,
       "closed": false,
-      "rank": 50
+      "rank": 49
     }
   ],
   "worst": [
@@ -1615,16 +1615,16 @@
       "month": "October",
       "closed": false,
       "gold": {
-        "name": "Tomáš Kreps",
-        "points": 71.0
+        "name": "Josef Mokráň",
+        "points": 92.0
       },
       "silver": {
-        "name": "Josef Mokráň",
-        "points": 70.0
+        "name": "Tomáš Kreps",
+        "points": 85.0
       },
       "bronze": {
         "name": "Miroslav Pádivý",
-        "points": 67.0
+        "points": 77.0
       }
     }
   ],
